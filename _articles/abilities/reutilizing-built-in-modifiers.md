@@ -105,7 +105,7 @@ After modifying the addon_english.txt:
 
 ![img](https://puu.sh/eHpXB/8fe79a1d57.jpg)
 
-Note that you cannot refer to a new custom %dMODIFIER_PROPERTY_[CONSTANT_LIST](https://iwasinminedream.github.io/moddota.github.io/forums/discussion/14/datadriven-ability-breakdown-documentation##properties)% in the tooltip, because it doesn't have the custom values in its modifier.
+Note that you cannot refer to a new custom %dMODIFIER_PROPERTY_[CONSTANT_LIST](https://iwasinminedream.github.io/moddota.github.io/forums/discussion/14/datadriven-ability-breakdown-documentation#properties)% in the tooltip, because it doesn't have the custom values in its modifier.
 
 Instead you can make those tooltips in the separate modifier, or directly add the numbers to the original modifier tooltip if they are static values (like in this cause I could've written 50 and 322). Sadly, you can't set the built-in modifier as hidden either.
 
