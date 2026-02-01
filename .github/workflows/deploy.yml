@@ -3,6 +3,7 @@ name: Deploy
 on:
   push:
     branches: source
+  workflow_dispatch:   # <-- добавлен ручной триггер
 
 jobs:
   deploy:
