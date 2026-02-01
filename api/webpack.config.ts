@@ -48,6 +48,13 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
       alias: {
         "~utils": resolve("src/utils"),
         "~components": resolve("src/components"),
+        // In development, use local dota-data for hot reloading
+        // In production, use npm package from node_modules
+        ...(isProduction ? {} : {
+          "@moddota/dota-data/files": path.resolve(__dirname, "../../dota-data/files"),
+          "@moddota/dota-data/lib": path.resolve(__dirname, "../../dota-data/lib"),
+          "@moddota/dota-data": path.resolve(__dirname, "../../dota-data"),
+        }),
       },
     },
     optimization: {
@@ -94,6 +101,18 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
       port: 3000,
       hot: true,
       historyApiFallback: true,
+      watchFiles: {
+        // Watch local dota-data files for changes during development
+        paths: [path.resolve(__dirname, '../../dota-data/files/**/*.json'), path.resolve(__dirname, '../../dota-data/lib/**/*.js')],
+        options: {
+          usePolling: true,
+          interval: 1000,
+        },
+      },
+    },
+
+    watchOptions: {
+      ignored: /node_modules/,
     },
   };
 };

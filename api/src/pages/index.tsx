@@ -6,6 +6,9 @@ const EventsPage = React.lazy(() => import(/* webpackChunkName: "events" */ "./e
 const VScriptsPage = React.lazy(() => import(/* webpackChunkName: "vscripts" */ "./vscripts"));
 const PanoramaApiPage = React.lazy(() => import(/* webpackChunkName: "panorama_events" */ "./panorama/api"));
 const PanoramaEventsPage = React.lazy(() => import(/* webpackChunkName: "panorama_events" */ "./panorama/events"));
+const ModifiersPage = React.lazy(() => import(/* webpackChunkName: "modifiers" */ "./modifiers"));
+const ConvarsPage = React.lazy(() => import(/* webpackChunkName: "convars" */ "./convars"));
+const ChangelogPage = React.lazy(() => import(/* webpackChunkName: "changelog" */ "./changelog"));
 
 const ErrorPage = styled.div`
   margin: auto;
@@ -23,6 +26,9 @@ export function AppRoutes() {
       <Route path="/vscripts/:scope?" component={VScriptsPage} />
       <Route path="/panorama/api/:scope?" component={PanoramaApiPage} />
       <Route path="/panorama/events/:scope?" component={PanoramaEventsPage} />
+      <Route path="/modifiers" component={ModifiersPage} />
+      <Route path="/convars" component={ConvarsPage} />
+      <Route path="/changelog" component={ChangelogPage} />
       <Route>
         <ErrorPage>404 Not Found</ErrorPage>
       </Route>

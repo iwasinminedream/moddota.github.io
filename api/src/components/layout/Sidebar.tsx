@@ -1,6 +1,6 @@
 import { darken } from "polished";
 import React, { useContext } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { IconKind, KindIcon } from "~components/KindIcon";
 import { Declaration } from "~components/Docs/api";
@@ -31,6 +31,25 @@ const SidebarLink = styled(NavLink)`
   }
 `;
 
+const SidebarLinkManual = styled(Link)<{ $isActive?: boolean }>`
+  background: ${(props) => props.$isActive ? darken(0.09, props.theme.sidebar) : props.theme.sidebar};
+  border-bottom: 3px solid ${(props) => props.$isActive ? props.theme.highlight : "transparent"};
+  border-radius: 3px;
+  padding: 2px 2px 0 2px;
+  text-decoration: none;
+  color: ${(props) => props.theme.text};
+  word-break: break-all;
+  font-weight: ${(props) => props.$isActive ? 600 : "normal"};
+
+  :not(:last-child) {
+    margin-bottom: 3px;
+  }
+
+  &:hover {
+    background: ${(props) => darken(0.09, props.theme.sidebar)};
+  }
+`;
+
 const SidebarKindIcon = styled(KindIcon)`
   vertical-align: ${({ kind }) => (kind === "interface" ? "middle" : "baseline")};
 `;
@@ -50,6 +69,24 @@ export const SidebarElement: React.FC<{
     {extra}
   </SidebarLink>
 ));
+
+// SidebarItem with manual active state detection (for query params)
+export const SidebarItem: React.FC<{
+  to: string;
+  icon: IconKind;
+  text: string;
+  isActive?: boolean;
+}> = React.memo(({ to, icon, text, isActive }) => {
+  const location = useLocation();
+  const currentPath = location.pathname + location.search;
+  const active = isActive !== undefined ? isActive : currentPath === to;
+  
+  return (
+    <SidebarLinkManual to={to} $isActive={active}>
+      <SidebarKindIcon kind={icon} size="small" /> {text}
+    </SidebarLinkManual>
+  );
+});
 
 export const DeclarationSidebarElement: React.FC<{ declaration: Declaration }> = React.memo(({ declaration }) => {
   const { root } = useContext(DeclarationsContext);

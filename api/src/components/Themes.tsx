@@ -3,6 +3,10 @@ export const themeOriginal = {
   highlight: "#455a64",
   text: "#ffffff",
   textDim: "#b0bec5",
+  textFaded: "#90a4ae",
+  border: "#37474f",
+  contentBackground: "#455a64",
+  sidebarHover: "#546e7a",
 
   authorEpitaph: "#89a62e",
 
@@ -48,6 +52,10 @@ export const themeModdotaLight = {
   highlight: "#89a62e",
   text: "#101010",
   textDim: "#606060",
+  textFaded: "#888888",
+  border: "#e0e0e0",
+  contentBackground: "#ffffff",
+  sidebarHover: "#f0f0f0",
 
   navbar: "#ffffff",
   navbarLinkShadow: "transparent",
@@ -91,6 +99,10 @@ export const themeModdotaDark = {
   highlight: "#89a62e",
   text: "#d0d0d0",
   textDim: "#808080",
+  textFaded: "#666666",
+  border: "#303030",
+  contentBackground: "#181818",
+  sidebarHover: "#282828",
 
   navbar: "#202020",
   navbarLinkShadow: "transparent",
