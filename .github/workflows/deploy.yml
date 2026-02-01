@@ -38,6 +38,8 @@ jobs:
       - run: npm run build
         name: "[API] Build"
         working-directory: api
+      - run: touch build/.nojekyll
+        name: "Create .nojekyll file"
       - name: Create gh-pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
