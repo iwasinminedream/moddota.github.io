@@ -31,19 +31,17 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npm run build
-      - run: npm ci
         name: "[API] Install dependencies"
         working-directory: api
       - run: npm run build
         name: "[API] Build"
         working-directory: api
-      - run: touch build/.nojekyll
+      - run: touch api/dist/.nojekyll
         name: "Create .nojekyll file"
       - name: Create gh-pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build
+          path: api/dist
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

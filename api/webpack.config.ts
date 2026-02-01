@@ -37,9 +37,9 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
 
   return {
     output: {
-      publicPath: isProduction ? "/api/" : "/",
+      publicPath: isProduction ? "/moddota.github.io/" : "/",
       filename: isProduction ? "[name].[contenthash].js" : undefined,
-      path: path.resolve(__dirname, "../build/api"),
+      path: path.resolve(__dirname, "dist"),
     },
 
     devtool: isProduction ? "nosources-source-map" : "eval-source-map",
