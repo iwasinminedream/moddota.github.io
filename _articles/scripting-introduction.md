@@ -70,7 +70,7 @@ This is the syntax of a function applied over GameRules, with one bool parameter
 
 Just as KV, Lua is Case Sensitive. Also the placement of the functions within your main Lua file doesn’t generally matter. All the script lines within a function call will be run one after another, potentially on the same *frame*; one frame in Dota is 1/30 of a second.
 
-Note the use of `:` colon before the function. In Lua, this is how we access the various **Game API functions**. We say that `GameRules` is an **HScript** or a **handle**. Handles are basically huge tables, with all the pertinent info of the entity. Over the [Scripting API page](https://moddota.com/api/#!/vscripts) you’ll see many different types of functions which can use different handles
+Note the use of `:` colon before the function. In Lua, this is how we access the various **Game API functions**. We say that `GameRules` is an **HScript** or a **handle**. Handles are basically huge tables, with all the pertinent info of the entity. Over the [Scripting API page](https://iwasinminedream.github.io/moddota.github.io/api/#!/vscripts) you’ll see many different types of functions which can use different handles
 
 Global functions don’t need any handle `:` prefix. Heroes, Creatures, Abilities and Items all have their different handle classes and attempting to call a function over an incompatible class will cause a VScript error, as pink text in console and red text on the gamescreen.
 

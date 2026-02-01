@@ -1,8 +1,8 @@
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
     title: "ModDota",
-    url: "https://moddota.com",
-    baseUrl: "/",
+    url: "https://iwasinminedream.github.io",
+    baseUrl: "/moddota.github.io/",
     favicon: "images/favicon.ico",
     onBrokenLinks: "throw",
     themeConfig: {
@@ -13,7 +13,7 @@ module.exports = {
                 src: "images/logo.svg",
             },
             items: [
-                { position: "left", label: "Lua API", href: "https://moddota.com/api" },
+                { position: "left", label: "Lua API", href: "https://iwasinminedream.github.io/moddota.github.io/api" },
                 {
                     position: "left",
                     label: "Panorama API",
