@@ -4,7 +4,8 @@ import styled from "styled-components";
 
 const EventsPage = React.lazy(() => import(/* webpackChunkName: "events" */ "./events"));
 const VScriptsPage = React.lazy(() => import(/* webpackChunkName: "vscripts" */ "./vscripts"));
-const PanoramaApiPage = React.lazy(() => import(/* webpackChunkName: "panorama_events" */ "./panorama/api"));
+const PanoramaApiPage = React.lazy(() => import(/* webpackChunkName: "panorama_api" */ "./panorama/api"));
+const PanoramaCssPage = React.lazy(() => import(/* webpackChunkName: "panorama_css" */ "./panorama/css"));
 const PanoramaEventsPage = React.lazy(() => import(/* webpackChunkName: "panorama_events" */ "./panorama/events"));
 const ModifiersPage = React.lazy(() => import(/* webpackChunkName: "modifiers" */ "./modifiers"));
 const ConvarsPage = React.lazy(() => import(/* webpackChunkName: "convars" */ "./convars"));
@@ -25,6 +26,7 @@ export function AppRoutes() {
       <Route path="/events/:scope?" component={EventsPage} />
       <Route path="/vscripts/:scope?" component={VScriptsPage} />
       <Route path="/panorama/api/:scope?" component={PanoramaApiPage} />
+      <Route path="/panorama/css/:scope?" component={PanoramaCssPage} />
       <Route path="/panorama/events/:scope?" component={PanoramaEventsPage} />
       <Route path="/modifiers" component={ModifiersPage} />
       <Route path="/convars" component={ConvarsPage} />

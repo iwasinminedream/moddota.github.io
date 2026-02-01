@@ -3,6 +3,8 @@ import { Declaration } from "~components/Docs/api";
 import vscriptsEvents from "@moddota/dota-data/files/events";
 import panoramaEvents from "@moddota/dota-data/files/panorama/events";
 import panoramaEnums from "@moddota/dota-data/files/panorama/enums";
+import panoramaApi from "@moddota/dota-data/files/panorama/api";
+import panoramaCss from "@moddota/dota-data/files/panorama/css";
 import { orderBy } from "lodash";
 import { DeclarationsContextType } from "~components/Docs/DeclarationsContext";
 
@@ -76,9 +78,27 @@ export const scopes = {
   },
   panorama: {
     root: "/panorama/api",
-    declarations: sort(
-      panoramaEnums.map((declaration) => ({
-        kind: "enum",
+    declarations: sort([
+      // Add API interfaces as classes with methods
+      ...panoramaApi.map((iface) => ({
+        kind: "class" as const,
+        name: iface.name,
+        description: iface.description,
+        isStarred: false,
+        members: iface.members.map((member) => ({
+          kind: "function" as const,
+          name: member.name,
+          description: member.description,
+          args: member.args.map((arg) => ({
+            name: arg.name,
+            types: arg.type ? [arg.type] : ["any"],
+          })),
+          returns: member.returns ? [member.returns] : ["void"],
+        })),
+      })),
+      // Add enums
+      ...panoramaEnums.map((declaration) => ({
+        kind: "enum" as const,
         name: declaration.name,
         isStarred: false,
         members: declaration.members.map((member) => ({
@@ -86,6 +106,22 @@ export const scopes = {
           description: member.description,
           value: member.value,
         })),
+      })),
+    ]),
+  },
+  panoramaCss: {
+    root: "/panorama/css",
+    declarations: sort(
+      Object.entries(panoramaCss).map(([name, property]) => ({
+        kind: "function" as const,
+        name: name,
+        description: property.description,
+        isStarred: false,
+        args: property.examples?.map((example, i) => ({
+          name: `example${i + 1}`,
+          types: [example],
+        })) || [],
+        returns: ["void"],
       })),
     ),
   },

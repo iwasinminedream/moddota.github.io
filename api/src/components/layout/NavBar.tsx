@@ -15,6 +15,7 @@ export const NavBar = () => (
     <NavBarLink to="/vscripts">Lua API</NavBarLink>
     <NavBarLink to="/events">Game Events</NavBarLink>
     <NavBarLink to="/panorama/api">Panorama API</NavBarLink>
+    <NavBarLink to="/panorama/css">Panorama CSS</NavBarLink>
     <NavBarLink to="/panorama/events">Panorama Events</NavBarLink>
     <NavBarLink to="/modifiers">Modifiers</NavBarLink>
     <NavBarLink to="/convars">Convars</NavBarLink>

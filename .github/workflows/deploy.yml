@@ -4,6 +4,8 @@ on:
   push:
     branches: source
   workflow_dispatch:   # <-- добавлен ручной триггер
+  repository_dispatch:  # <-- триггер от внешнего репозитория
+    types: [dota-data-updated]
 
 jobs:
   deploy:
