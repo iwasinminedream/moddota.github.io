@@ -1,4 +1,4 @@
-# [moddota.com](https://moddota.com)
+# [moddota.github.io](https://iwasinminedream.github.io/moddota.github.io)
 
 ModDota GitHub Pages project.
 

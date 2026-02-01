@@ -34,7 +34,7 @@ The definition of the default dota units can be found in [npc_units.txt](https:/
 
 ### Base Classes
 
-There are a lot of classes for units, the [complete list can be found in here](https://moddota.com/forums/discussion/comment/746/#Comment_746), but as we don't have much control over their properties, only a few are really useful for custom units in general:
+There are a lot of classes for units, the [complete list can be found in here](https://iwasinminedream.github.io/moddota.github.io/forums/discussion/comment/746/#Comment_746), but as we don't have much control over their properties, only a few are really useful for custom units in general:
 
 * ***npc_dota_creature***
 
@@ -493,7 +493,7 @@ All these settings can and should be put inside **one** creature block, but they
 
 ### Wearables
 
-See [this](https://moddota.com/units/create-creature-attachwearable-blocks-directly-from-the-keyvalues) guide for more info.
+See [this](https://iwasinminedream.github.io/moddota.github.io/units/create-creature-attachwearable-blocks-directly-from-the-keyvalues) guide for more info.
 
 ```
 "Creature"

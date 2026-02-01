@@ -7,7 +7,7 @@ date: 07.02.2015
 
 Here I'll explain how to modify preexisting particles for the creation of a [Volcano ability](https://github.com/MNoya/DotaCraft/blob/master/scripts/npc/abilities/firelord_volcano.txt) :nuke:
 
-I won't be making the particles from scratch or going really deep into its possibilities, so make sure to read the wonderful [Particle Creation Series](http://moddota.com/forums/discussion/110/particles-creation-series) by kritth to get a deeper understanding than just this example.
+I won't be making the particles from scratch or going really deep into its possibilities, so make sure to read the wonderful [Particle Creation Series](https://iwasinminedream.github.io/moddota.github.io/forums/discussion/110/particles-creation-series) by kritth to get a deeper understanding than just this example.
 
 <Gfycat id="HandsomeImpossibleHyena" />
 
@@ -82,7 +82,7 @@ Repeat the same process on the groundburst particle.
 
 Now, lets add fire to it! :fire:
 
-In case you don't have the latest decompiled particles (which should include Techies and SF Arcana particles), download them from here: **[Decompiled Particles](http://moddota.com/resources/decompiled_particles.zip)**. There should also be a link in the [Resources Page](http://moddota.com/forums/resources)
+In case you don't have the latest decompiled particles (which should include Techies and SF Arcana particles), download them from here: **[Decompiled Particles](https://iwasinminedream.github.io/moddota.github.io/resources/decompiled_particles.zip)**. There should also be a link in the [Resources Page](https://iwasinminedream.github.io/moddota.github.io/forums/resources)
 
 <br />
 

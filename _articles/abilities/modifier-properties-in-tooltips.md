@@ -5,7 +5,7 @@ steamId: '76561198157673452'
 date: 05.12.2021
 ---
 
-Any time you see a modifier tooltip using a non-static number it's getting its value from one of that modifier's [MODIFIER_PROPERTY_](https://moddota.com/api/#!/vscripts/modifierfunction)'s
+Any time you see a modifier tooltip using a non-static number it's getting its value from one of that modifier's [MODIFIER_PROPERTY_](https://iwasinminedream.github.io/moddota.github.io/api/#!/vscripts/modifierfunction)'s
 
 some examples:
 ![img](https://i.imgur.com/dngijaZ.png)
@@ -138,4 +138,4 @@ end
 ### My %property% always shows 0 ??
 
 If you're having this issue then your returned value is probably only seen on the Server and not the Client.
-See this guide for instruction: [Sending Server values to the Client](https://moddota.com/abilities/server-to-client)
+See this guide for instruction: [Sending Server values to the Client](https://iwasinminedream.github.io/moddota.github.io/abilities/server-to-client)

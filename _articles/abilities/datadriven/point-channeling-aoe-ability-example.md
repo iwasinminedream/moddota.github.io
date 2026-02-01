@@ -192,7 +192,7 @@ Back to the OnSpellStart, 2 more actions:
  }
 ```
 
-First action will destroy the trees around the POINT targeted and the second action applies a modifier that takes care of the channeling animation, using the same method explained in the [Channeling Animations Tutorial](http://moddota.com/forums/discussion/77/channeling-animations)
+First action will destroy the trees around the POINT targeted and the second action applies a modifier that takes care of the channeling animation, using the same method explained in the [Channeling Animations Tutorial](https://iwasinminedream.github.io/moddota.github.io/forums/discussion/77/channeling-animations)
 
 Animation needs to start half a second later to sync with the damage, this is a matter of experimenting with the time frames.
 
