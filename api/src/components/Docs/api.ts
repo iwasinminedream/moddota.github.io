@@ -1,4 +1,4 @@
-export type Declaration = (FunctionDeclaration | ClassDeclaration | Constant | Enum) & { isStarred: boolean };
+export type Declaration = (FunctionDeclaration | ClassDeclaration | Constant | Enum | CssProperty) & { isStarred: boolean };
 export type Availability = "server" | "client" | "both";
 
 export type Type = string | LiteralType | TableType | ArrayType | FunctionType;
@@ -81,4 +81,11 @@ export interface EnumMember {
   name: string;
   description?: string;
   value: number;
+}
+
+export interface CssProperty {
+  kind: "cssProperty";
+  name: string;
+  description?: string;
+  examples: string[];
 }

@@ -1,16 +1,54 @@
 import apiTypes from "@moddota/dota-data/files/vscripts/api-types";
 import { getFuncDeepTypes } from "@moddota/dota-data/lib/helpers/vscripts";
 import { useParams } from "react-router-dom";
-import { composeFilters, useRouterSearch } from "~components/Search";
+import { composeFilters, useRouterSearch, AvailabilityFilters } from "~components/Search";
 import { isNotNil } from "~utils/types";
 import * as api from "~components/Docs/api";
 
-export function useFilteredData(declarations: api.Declaration[]) {
+// Helper function to filter class members by availability
+function filterDeclarationsByAvailability(
+  declarations: api.Declaration[],
+  availabilityFilters?: AvailabilityFilters
+): api.Declaration[] {
+  if (!availabilityFilters) return declarations;
+  
+  const { serverEnabled, clientEnabled } = availabilityFilters;
+  
+  // If both filters are enabled, no filtering needed
+  if (serverEnabled && clientEnabled) return declarations;
+  
+  return declarations.map((declaration) => {
+    if (declaration.kind === "class") {
+      return {
+        ...declaration,
+        members: declaration.members.filter((member) => {
+          if (member.kind !== "function") return true;
+          if (!member.available) return true;
+          
+          if (member.available === "server" && !serverEnabled) return false;
+          if (member.available === "client" && !clientEnabled) return false;
+          
+          return true;
+        }),
+      };
+    }
+    return declaration;
+  }).filter((d) => {
+    // Don't filter out classes even if they have no members after filtering
+    if (d.kind === "class") return true;
+    return true;
+  });
+}
+
+export function useFilteredData(
+  declarations: api.Declaration[], 
+  availabilityFilters?: AvailabilityFilters
+) {
   const search = useRouterSearch();
   const { scope = "" } = useParams<{ scope?: string }>();
 
   if (search) {
-    return { data: doSearch(declarations, search.toLowerCase().split(" ")), isSearching: true };
+    return { data: doSearch(declarations, search.toLowerCase().split(" "), availabilityFilters), isSearching: true };
   }
 
   switch (scope) {
@@ -20,9 +58,15 @@ export function useFilteredData(declarations: api.Declaration[]) {
     case "constants":
       declarations = declarations.filter((x) => x.kind === "constant");
       break;
+    case "properties":
+      declarations = declarations.filter((x) => x.kind === "cssProperty");
+      break;
     default:
       declarations = declarations.filter((x) => x.name === scope);
   }
+
+  // Apply availability filters to class members even when not searching
+  declarations = filterDeclarationsByAvailability(declarations, availabilityFilters);
 
   return { data: declarations, isSearching: false };
 }
@@ -54,7 +98,11 @@ export function getReferencesForFunction(func: api.FunctionDeclaration) {
 const AVAILABILITY_PATTERN = /^-?on:(client|server)$/;
 const ABSTRACT_METHOD_PATTERN = /^-?is:abstract$/;
 
-export function doSearch(declarations: api.Declaration[], words: string[]): api.Declaration[] {
+export function doSearch(
+  declarations: api.Declaration[], 
+  words: string[],
+  availabilityFilters?: AvailabilityFilters
+): api.Declaration[] {
   const availabilityWords = words.filter((x) => AVAILABILITY_PATTERN.test(x));
   const abstractMethodWords = words.filter((x) => ABSTRACT_METHOD_PATTERN.test(x));
   const typeWords = words.filter((x) => x.startsWith("type:")).map((x) => x.replace(/^type:/, ""));
@@ -63,6 +111,30 @@ export function doSearch(declarations: api.Declaration[], words: string[]): api.
   );
 
   function filterAvailability(member: { available: api.Availability } | object) {
+    // First check the UI filters (from buttons)
+    if (availabilityFilters) {
+      const { serverEnabled, clientEnabled } = availabilityFilters;
+      
+      // If both are enabled, no filtering needed from UI, continue to search query filters
+      if (!serverEnabled || !clientEnabled) {
+        if (!("available" in member)) {
+          // Items without availability info - show them
+          return undefined;
+        }
+        
+        if (member.available === "server" && !serverEnabled) {
+          return false;
+        }
+        
+        if (member.available === "client" && !clientEnabled) {
+          return false;
+        }
+        
+        // "both" availability - always show (since we can't disable both filters)
+      }
+    }
+    
+    // Then check search query filters (for backward compatibility)
     if (availabilityWords.length === 0) return undefined;
     if (!("available" in member)) return false;
 

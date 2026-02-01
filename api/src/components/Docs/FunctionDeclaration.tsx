@@ -1,5 +1,5 @@
 import * as api from "./api";
-import React, { useMemo } from "react";
+import React, { useMemo, useContext } from "react";
 import styled from "styled-components";
 import { getReferencesForFunction } from "./utils/filtering";
 import { ObjectType } from "./ObjectType";
@@ -13,6 +13,7 @@ import {
 } from "./utils/styles";
 import { FunctionParameters, Types } from "./types";
 import { AvailabilityBadge } from "~components/Docs/AvailabilityBadge";
+import { DeclarationsContext } from "~components/Docs/DeclarationsContext";
 
 const FunctionWrapper = styled(CommonGroupWrapper)`
   padding: 2px 5px;
@@ -50,6 +51,10 @@ export const FunctionDeclaration: React.FC<{
   context?: string;
   declaration: api.ClassMethod;
 }> = ({ className, style, context, declaration }) => {
+  const { root } = useContext(DeclarationsContext);
+  const isPanorama = root.includes("/panorama");
+  const searchPath = isPanorama ? "panorama" : "vscripts";
+  
   const objectReferences = useMemo(
     () => getReferencesForFunction(declaration).map((x) => <ObjectType key={x.name} declaration={x} />),
     [declaration],
@@ -86,8 +91,8 @@ export const FunctionDeclaration: React.FC<{
         </FunctionSignature>
         <ElementBadges>
           {declaration.available && <AvailabilityBadge available={declaration.available} />}
-          <SearchOnGitHub name={declaration.name} />
-          <SearchOnGoogle name={declaration.name} />
+          <SearchOnGitHub name={declaration.name} className={isPanorama ? context : undefined} searchPath={searchPath} />
+          <SearchOnGoogle name={declaration.name} searchPath={searchPath} />
           {context && <ElementLink scope={context} hash={declaration.name} />}
         </ElementBadges>
       </CommonGroupHeader>

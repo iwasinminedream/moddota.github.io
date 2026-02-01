@@ -1,17 +1,19 @@
 import { darken } from "polished";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState, createContext, useContext } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import SearchIcon from "./search.svg";
 
 const SearchBoxWrapper = styled.div`
   display: flex;
   flex-flow: row;
   flex-shrink: 0;
+  align-items: center;
   background-color: ${(props) => props.theme.searchbox.background};
   border: ${(props) => props.theme.searchbox.border};
   border-radius: 32px;
   padding-left: 6px;
+  padding-right: 6px;
 `;
 
 const SearchBoxInput = styled.input`
@@ -41,6 +43,46 @@ const SearchButton = styled.button<{ isUpdated: boolean }>`
   }
 `;
 
+const AvailabilityFilterWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid ${(props) => props.theme.groupBorder};
+`;
+
+const AvailabilityFilterButton = styled.button<{ color: string; active: boolean }>`
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  user-select: none;
+  background: radial-gradient(${(props) => props.color}, ${(props) => darken(0.22, props.color)});
+  color: white;
+  border-radius: 3px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px black;
+  box-shadow: 1px 1px 1px #00000030;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  ${(props) =>
+    !props.active &&
+    css`
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+      filter: saturate(10%);
+      opacity: 40%;
+    `}
+
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
 export const composeFilters =
   <T,>(filters: ((member: T) => boolean | undefined)[]) =>
   (value: T) => {
@@ -49,6 +91,21 @@ export const composeFilters =
     if (results.includes(true)) return true;
     return false;
   };
+
+// Context for availability filters
+export type AvailabilityFilters = {
+  serverEnabled: boolean;
+  clientEnabled: boolean;
+};
+
+export const AvailabilityFiltersContext = createContext<AvailabilityFilters>({
+  serverEnabled: true,
+  clientEnabled: true,
+});
+
+export function useAvailabilityFilters() {
+  return useContext(AvailabilityFiltersContext);
+}
 
 export function useRouterSearch() {
   const location = useLocation();
@@ -73,7 +130,23 @@ export function useCtrlFHook<T extends HTMLElement>() {
   return ref;
 }
 
-export function SearchBox({ baseUrl, className }: { baseUrl: string; className?: string }) {
+export function SearchBox({ 
+  baseUrl, 
+  className, 
+  showAvailabilityFilters = false,
+  serverEnabled = true,
+  clientEnabled = true,
+  onServerToggle,
+  onClientToggle,
+}: { 
+  baseUrl: string; 
+  className?: string; 
+  showAvailabilityFilters?: boolean;
+  serverEnabled?: boolean;
+  clientEnabled?: boolean;
+  onServerToggle?: () => void;
+  onClientToggle?: () => void;
+}) {
   const routerSearch = useRouterSearch();
   const [search, setSearch] = useState(routerSearch);
   useEffect(() => setSearch(routerSearch), [routerSearch]);
@@ -96,7 +169,7 @@ export function SearchBox({ baseUrl, className }: { baseUrl: string; className?:
 
   const handleSearchButton = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     () => setSearchQuery(search),
-    [search],
+    [search, setSearchQuery],
   );
   const handleSearchButtonMouseDown = useCallback<React.MouseEventHandler<HTMLButtonElement>>(
     (event) => event.preventDefault(),
@@ -109,7 +182,7 @@ export function SearchBox({ baseUrl, className }: { baseUrl: string; className?:
   );
   const handleKey = useCallback<React.KeyboardEventHandler<HTMLInputElement>>(
     (event) => event.key === "Enter" && setSearchQuery(search),
-    [search],
+    [search, setSearchQuery],
   );
 
   const ref = useCtrlFHook<HTMLInputElement>();
@@ -133,6 +206,27 @@ export function SearchBox({ baseUrl, className }: { baseUrl: string; className?:
         onKeyUp={handleKey}
         aria-label="Search"
       />
+      
+      {showAvailabilityFilters && (
+        <AvailabilityFilterWrapper>
+          <AvailabilityFilterButton
+            color="#5b82ee"
+            active={serverEnabled}
+            onClick={onServerToggle}
+            title={serverEnabled ? "Click to hide server-side functions" : "Click to show server-side functions"}
+          >
+            s
+          </AvailabilityFilterButton>
+          <AvailabilityFilterButton
+            color="#59df37"
+            active={clientEnabled}
+            onClick={onClientToggle}
+            title={clientEnabled ? "Click to hide client-side functions" : "Click to show client-side functions"}
+          >
+            c
+          </AvailabilityFilterButton>
+        </AvailabilityFilterWrapper>
+      )}
     </SearchBoxWrapper>
   );
 }

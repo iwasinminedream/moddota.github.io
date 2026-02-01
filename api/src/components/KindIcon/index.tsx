@@ -6,7 +6,7 @@ import Interface from "./Interface.svg";
 import Method from "./Method.svg";
 
 // https://code.visualstudio.com/docs/editor/intellisense#_types-of-completions
-export type IconKind = "class" | "enum" | "constant" | "field" | "interface" | "function";
+export type IconKind = "class" | "enum" | "constant" | "field" | "interface" | "function" | "cssProperty";
 const iconToElementMap: Record<IconKind, typeof import("*.svg").default> = {
   class: Class,
   enum: EnumItem,
@@ -14,6 +14,7 @@ const iconToElementMap: Record<IconKind, typeof import("*.svg").default> = {
   field: Field,
   interface: Interface,
   function: Method,
+  cssProperty: Field,
 };
 
 export const KindIcon: React.FC<{

@@ -36,9 +36,10 @@ const SearchWrapper = styled.a.attrs({ target: "_blank", rel: "noreferrer noopen
   }
 `;
 
-export const SearchOnGitHub: React.FC<{ name: string }> = ({ name }) => {
-  const query = encodeURIComponent(`${name} path:vscripts`);
-  const href = `https://github.com/search?l=Lua&q=${query}&type=Code`;
+export const SearchOnGitHub: React.FC<{ name: string; className?: string; searchPath?: string }> = ({ name, className, searchPath = "vscripts" }) => {
+  const searchTerm = className ? `${className}.${name}` : name;
+  const query = encodeURIComponent(`${searchTerm} path:${searchPath}`);
+  const href = `https://github.com/search?q=${query}&type=Code`;
   return (
     <SearchWrapper href={href} title="Search on GitHub">
       <SearchGitHubIcon width={16} height={16} />
@@ -46,8 +47,8 @@ export const SearchOnGitHub: React.FC<{ name: string }> = ({ name }) => {
   );
 };
 
-export const SearchOnGoogle: React.FC<{ name: string }> = ({ name }) => {
-  const query = encodeURIComponent(`site:github.com inurl:vscripts "${name}"`);
+export const SearchOnGoogle: React.FC<{ name: string; searchPath?: string }> = ({ name, searchPath = "vscripts" }) => {
+  const query = encodeURIComponent(`site:github.com inurl:${searchPath} "${name}"`);
   const href = `https://www.google.com/search?q=${query}`;
   return (
     <SearchWrapper href={href} title="Search on Google">

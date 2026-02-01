@@ -78,50 +78,63 @@ export const scopes = {
   },
   panorama: {
     root: "/panorama/api",
-    declarations: sort([
-      // Add API interfaces as classes with methods
-      ...panoramaApi.map((iface) => ({
+    declarations: (() => {
+      // Helper function to strip _arg_ prefix from argument names
+      const cleanArgName = (name: string) => name.replace(/^_arg_/, "arg");
+      
+      // Helper function to determine panorama API type order
+      // Interfaces (C-prefix) = 0, Panels (non-C-prefix) = 1
+      const getPanoramaApiOrder = (name: string) => name.startsWith("C") ? 0 : 1;
+      
+      // Convert API to class declarations
+      const apiDeclarations = panoramaApi.map((iface) => ({
         kind: "class" as const,
         name: iface.name,
         description: iface.description,
         isStarred: false,
+        _order: getPanoramaApiOrder(iface.name),
         members: iface.members.map((member) => ({
           kind: "function" as const,
           name: member.name,
           description: member.description,
           args: member.args.map((arg) => ({
-            name: arg.name,
+            name: cleanArgName(arg.name),
             types: arg.type ? [arg.type] : ["any"],
           })),
           returns: member.returns ? [member.returns] : ["void"],
         })),
-      })),
-      // Add enums
-      ...panoramaEnums.map((declaration) => ({
+      }));
+      
+      // Convert enums (order = 2, after interfaces and panels)
+      const enumDeclarations = panoramaEnums.map((declaration) => ({
         kind: "enum" as const,
         name: declaration.name,
         isStarred: false,
+        _order: 2,
         members: declaration.members.map((member) => ({
           name: member.name,
           description: member.description,
           value: member.value,
         })),
-      })),
-    ]),
+      }));
+      
+      // Combine and sort by _order first, then by name
+      return orderBy(
+        [...apiDeclarations, ...enumDeclarations],
+        [(e) => e._order, (e) => e.name],
+        ["asc", "asc"]
+      );
+    })(),
   },
   panoramaCss: {
     root: "/panorama/css",
     declarations: sort(
       Object.entries(panoramaCss).map(([name, property]) => ({
-        kind: "function" as const,
+        kind: "cssProperty" as const,
         name: name,
         description: property.description,
         isStarred: false,
-        args: property.examples?.map((example, i) => ({
-          name: `example${i + 1}`,
-          types: [example],
-        })) || [],
-        returns: ["void"],
+        examples: property.examples || [],
       })),
     ),
   },
