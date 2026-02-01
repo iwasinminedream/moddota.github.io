@@ -2,7 +2,7 @@
   "private": true,
   "scripts": {
     "analyze": "webpack --mode production --env.analyze",
-    "prebuild": "node -e \"const fs=require('fs');const p=require('path');const src=p.resolve(__dirname,'../../dota-data');const dst=p.resolve(__dirname,'node_modules/@moddota/dota-data');if(fs.existsSync(src)){['files','lib'].forEach(d=>{const s=p.join(src,d),t=p.join(dst,d);if(fs.existsSync(s)){fs.cpSync(s,t,{recursive:true});console.log('Copied',d)}});}\"",
+    "prebuild": "node -e \"const fs=require('fs');const p=require('path');const paths=['../../dota-data','../dota-data'];const dst=p.resolve(__dirname,'node_modules/@moddota/dota-data');for(const rel of paths){const src=p.resolve(__dirname,rel);if(fs.existsSync(src)){['files','lib'].forEach(d=>{const s=p.join(src,d),t=p.join(dst,d);if(fs.existsSync(s)){fs.cpSync(s,t,{recursive:true});console.log('Copied',d,'from',src)}});break;}}\"",
     "build": "webpack --mode production",
     "dev": "webpack serve --mode development",
     "lint": "eslint ."
