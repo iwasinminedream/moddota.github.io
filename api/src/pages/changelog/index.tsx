@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import { lighten } from "polished";
-import { useLocation, useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import { ContentWrapper } from "~components/layout/Content";
 import { SidebarWrapper, SidebarItem } from "~components/layout/Sidebar";
 
@@ -374,7 +374,7 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
 }
 
 export default function Changelog() {
-  const location = useLocation();
+  const { version: urlVersion } = useParams<{ version?: string }>();
   const history = useHistory();
   
   const [index, setIndex] = useState<IndexEntry[]>([]);
@@ -390,7 +390,7 @@ export default function Changelog() {
     });
   }, []);
   
-  const selectedVersion = location.hash.slice(1) || (index[0]?.version ?? "");
+  const selectedVersion = urlVersion || (index[0]?.version ?? "");
 
   // Load changelog data when version changes
   const loadVersion = useCallback(async (version: string) => {
@@ -421,10 +421,10 @@ export default function Changelog() {
 
   // Navigate to first version if none selected
   useEffect(() => {
-    if (!location.hash && index.length > 0) {
-      history.replace(`/changelog#${index[0].version}`);
+    if (!urlVersion && index.length > 0) {
+      history.replace(`/changelog/${index[0].version}`);
     }
-  }, [location.hash, index, history]);
+  }, [urlVersion, index, history]);
 
   // Show loading state while fetching index
   if (indexLoading) {
@@ -520,7 +520,7 @@ export default function Changelog() {
         {index.map((entry) => (
           <SidebarItem
             key={entry.version}
-            to={`/changelog#${entry.version}`}
+            to={`/changelog/${entry.version}`}
             icon="constant"
             text={
               <>

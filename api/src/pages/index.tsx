@@ -30,7 +30,7 @@ export function AppRoutes() {
       <Route path="/panorama/events/:scope?" component={PanoramaEventsPage} />
       <Route path="/modifiers" component={ModifiersPage} />
       <Route path="/convars" component={ConvarsPage} />
-      <Route path="/changelog" component={ChangelogPage} />
+      <Route path="/changelog/:version?" component={ChangelogPage} />
       <Route>
         <ErrorPage>404 Not Found</ErrorPage>
       </Route>
