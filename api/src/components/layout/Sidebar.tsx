@@ -74,7 +74,7 @@ export const SidebarElement: React.FC<{
 export const SidebarItem: React.FC<{
   to: string;
   icon: IconKind;
-  text: string;
+  text: React.ReactNode;
   isActive?: boolean;
 }> = React.memo(({ to, icon, text, isActive }) => {
   const location = useLocation();

@@ -101,6 +101,12 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
       port: 3000,
       hot: true,
       historyApiFallback: true,
+      static: {
+        // Serve changelog files from dota-data
+        directory: path.resolve(__dirname, '../../dota-data/files'),
+        publicPath: '/changelog-data',
+        watch: true,
+      },
       watchFiles: {
         // Watch local dota-data files for changes during development
         paths: [path.resolve(__dirname, '../../dota-data/files/**/*.json'), path.resolve(__dirname, '../../dota-data/lib/**/*.js')],

@@ -2,3 +2,4 @@ node_modules
 .docusaurus
 /build
 api/dist/
+xxx.md
