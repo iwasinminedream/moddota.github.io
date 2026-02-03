@@ -48,11 +48,11 @@ const isDev = typeof window !== 'undefined' && window.location.hostname === 'loc
 // URLs for changelog files - local in dev, GitHub in production
 const CHANGELOG_BASE_URL = isDev
   ? "/changelog-data/changelogs"
-  : "https://raw.githubusercontent.com/iwasinminedream/dota-data/main/files/changelogs";
+  : "https://raw.githubusercontent.com/iceyellowc/dota-data/master/files/changelogs";
 
 const CHANGELOG_INDEX_URL = isDev
   ? "/changelog-data/changelog-index.json"
-  : "https://raw.githubusercontent.com/iwasinminedream/dota-data/main/files/changelog-index.json";
+  : "https://raw.githubusercontent.com/iceyellowc/dota-data/master/files/changelog-index.json";
 
 // Cache for the index
 let indexCache: IndexEntry[] | null = null;

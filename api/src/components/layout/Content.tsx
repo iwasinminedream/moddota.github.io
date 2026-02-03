@@ -5,6 +5,9 @@ export const ContentWrapper = styled.main`
   flex: 1;
   display: flex;
   flex-flow: column;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 0 0 0 24px;
 
   @media (max-width: 1100px) {
