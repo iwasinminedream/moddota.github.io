@@ -43,7 +43,7 @@ interface IndexEntry {
 const changelogCache = new Map<string, ChangelogEntry>();
 
 // Check if running in development mode (localhost)
-const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+const isDev = typeof window !== "undefined" && window.location.hostname === "localhost";
 
 // URLs for changelog files - local in dev, GitHub in production
 const CHANGELOG_BASE_URL = isDev
@@ -64,7 +64,7 @@ function clearChangelogCache() {
 }
 
 // In dev mode, clear cache periodically to pick up changes
-if (isDev && typeof window !== 'undefined') {
+if (isDev && typeof window !== "undefined") {
   // Clear cache every 5 seconds in dev mode to pick up file changes
   setInterval(clearChangelogCache, 5000);
 }
@@ -77,12 +77,12 @@ async function loadChangelogIndex(): Promise<IndexEntry[]> {
 
   try {
     const response = await fetch(CHANGELOG_INDEX_URL);
-    
+
     if (!response.ok) {
       console.warn(`Failed to load changelog index: ${response.status}`);
       return [];
     }
-    
+
     const data = await response.json();
     indexCache = data;
     return data;
@@ -101,12 +101,12 @@ async function loadChangelogVersion(version: string): Promise<ChangelogEntry | n
 
   try {
     const response = await fetch(`${CHANGELOG_BASE_URL}/${version}.json`);
-    
+
     if (!response.ok) {
       console.warn(`Failed to load changelog for version ${version}: ${response.status}`);
       return null;
     }
-    
+
     const data = await response.json();
     changelogCache.set(version, data);
     return data;
@@ -119,69 +119,121 @@ async function loadChangelogVersion(version: string): Promise<ChangelogEntry | n
 const ChangeWrapper = styled.div`
   display: flex;
   flex-flow: column;
-  background-color: ${(props) => props.theme.group};
-  border: 1px solid ${(props) => props.theme.groupBorder};
-  border-top-color: ${(props) => lighten(0.1, props.theme.groupBorder)};
-  border-radius: 4px;
-  box-shadow: 2px 2px 6px ${(props) => props.theme.groupShadow};
-  padding: 10px 12px;
+  gap: 16px;
 `;
 
-const ChangeSection = styled.div`
-  margin-bottom: 12px;
-  &:last-child { margin-bottom: 0; }
+const ChangeSection = styled.div<{ type: "added" | "removed" }>`
+  background-color: ${(props) => (props.type === "added" ? "rgba(16, 185, 129, 0.05)" : "rgba(239, 68, 68, 0.05)")};
+  border-left: 4px solid ${(props) => (props.type === "added" ? "#10b981" : "#ef4444")};
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px ${(props) => (props.type === "added" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)")};
 `;
 
 const ChangeSectionTitle = styled.div<{ type: "added" | "removed" }>`
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
   color: ${(props) => (props.type === "added" ? "#10b981" : "#ef4444")};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: "${(props) => (props.type === "added" ? "✅" : "❌")}";
+    font-size: 18px;
+  }
 `;
 
 const ChangeCategory = styled.div`
-  margin-bottom: 10px;
-  padding-left: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background-color: ${(props) => props.theme.group};
+  border-radius: 6px;
 `;
 
 const CategoryName = styled.div`
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: ${(props) => props.theme.text};
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: "📁";
+    font-size: 14px;
+  }
 `;
 
 const ChangeList = styled.ul`
   margin: 0;
   padding-left: 20px;
+  list-style-type: none;
 `;
 
 const ChangeItemStyled = styled.li`
   font-family: monospace;
-  font-size: 12px;
-  color: ${(props) => props.theme.textFaded};
-  margin-bottom: 2px;
+  font-size: 13px;
+  color: ${(props) => props.theme.text};
+  margin-bottom: 4px;
+  padding: 2px 0;
 `;
 
 const ChangeItemSignature = styled.span`
   color: ${(props) => props.theme.highlight};
+  font-weight: 500;
 `;
 
 const ChangeItemClass = styled.span`
-  color: #3b82f6;
-  font-weight: 500;
+  color: #2563eb;
+  font-weight: 600;
 `;
 
 const ChangeItemEnum = styled.span`
-  color: #8b5cf6;
+  color: #7c3aed;
+  font-weight: 600;
+`;
+
+const ChangeSubCategory = styled.div<{ collapsed?: boolean }>`
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  background-color: ${(props) => props.theme.groupBorder}20;
+  border-radius: 4px;
+  border-left: 2px solid ${(props) => props.theme.highlight};
+`;
+
+const SubCategoryName = styled.div<{ collapsed?: boolean }>`
+  font-size: 12px;
   font-weight: 500;
+  color: ${(props) => props.theme.textFaded};
+  margin-bottom: 4px;
+  text-transform: capitalize;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &::before {
+    content: "${(props) => (props.collapsed ? "▶" : "▼")}";
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+
+  &:hover {
+    color: ${(props) => props.theme.text};
+  }
 `;
 
 const NoChanges = styled.div`
   color: ${(props) => props.theme.textFaded};
   font-style: italic;
-  padding: 20px;
+  padding: 40px;
   text-align: center;
+  background-color: ${(props) => props.theme.group};
+  border-radius: 8px;
+  border: 1px solid ${(props) => props.theme.groupBorder};
 `;
 
 const LoadingState = styled.div`
@@ -200,9 +252,11 @@ const LoadingSpinner = styled.div`
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-right: 12px;
-  
+
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -253,16 +307,16 @@ const EmptyIndex = styled.div`
   padding: 40px;
   text-align: center;
   color: ${(props) => props.theme.textFaded};
-  
+
   h3 {
     margin-bottom: 12px;
   }
-  
+
   p {
     font-size: 14px;
     margin-bottom: 8px;
   }
-  
+
   code {
     background: ${(props) => props.theme.group};
     padding: 2px 6px;
@@ -270,6 +324,31 @@ const EmptyIndex = styled.div`
     font-size: 13px;
   }
 `;
+
+function getTypeDisplayName(type: string): string {
+  // If it looks like a class name (starts with CDOTA_ or contains _), display as is
+  if (type.startsWith("CDOTA_") || type.includes("_") || type === "Global Functions") {
+    return type;
+  }
+
+  const typeMap: Record<string, string> = {
+    class: "Classes",
+    function: "Functions",
+    method: "Methods",
+    constant: "Constants",
+    const: "Constants",
+    modifier: "Modifiers",
+    modifiers: "Modifiers",
+    event: "Events",
+    events: "Events",
+    convar: "Convars",
+    property: "Properties",
+    enum: "Enums",
+    enum_member: "Enum Members",
+    member: "Members",
+  };
+  return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1) + "s";
+}
 
 function formatChangeItem(item: ChangeItem): React.ReactNode {
   if (item.type === "member" && item.enum) {
@@ -281,15 +360,6 @@ function formatChangeItem(item: ChangeItem): React.ReactNode {
     );
   }
   if (item.type === "enum_member") {
-    // Format: "EnumName.MEMBER_NAME"
-    const parts = item.name?.split('.') || [];
-    if (parts.length === 2) {
-      return (
-        <>
-          <ChangeItemEnum>{parts[0]}</ChangeItemEnum>.{parts[1]}
-        </>
-      );
-    }
     return <>{item.name}</>;
   }
   if (item.type === "enum") {
@@ -298,7 +368,6 @@ function formatChangeItem(item: ChangeItem): React.ReactNode {
   if (item.type === "function" || item.type === "method") {
     return (
       <>
-        {item.class && <><ChangeItemClass>{item.class}</ChangeItemClass>.</>}
         <ChangeItemSignature>{item.signature || item.name}</ChangeItemSignature>
       </>
     );
@@ -318,7 +387,7 @@ function formatChangeItem(item: ChangeItem): React.ReactNode {
   if (item.type === "property") {
     return (
       <>
-        <ChangeItemClass>{item.class}</ChangeItemClass>.{item.name}
+        {item.name}
         {item.description && `: ${item.description}`}
       </>
     );
@@ -328,39 +397,127 @@ function formatChangeItem(item: ChangeItem): React.ReactNode {
 
 function VersionContent({ entry }: { entry: ChangelogEntry }) {
   const categories = Object.entries(entry.changes);
-  const hasChanges = categories.some(
-    ([, cat]) => (cat.added?.length || 0) > 0 || (cat.removed?.length || 0) > 0
-  );
+  const hasChanges = categories.some(([, cat]) => (cat.added?.length || 0) > 0 || (cat.removed?.length || 0) > 0);
+
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleCollapsed = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupKey)) {
+        newSet.delete(groupKey);
+      } else {
+        newSet.add(groupKey);
+      }
+      return newSet;
+    });
+  };
+
+  // Initialize collapsed state for modifier groups
+  useEffect(() => {
+    const modifierGroups = new Set<string>();
+    categories.forEach(([catName, cat]) => {
+      const items = [...(cat.added || []), ...(cat.removed || [])];
+      items.forEach((item) => {
+        let groupKey: string;
+        if (
+          item.type === "function" ||
+          item.type === "method" ||
+          item.type === "constant" ||
+          item.type === "const" ||
+          item.type === "property"
+        ) {
+          groupKey =
+            item.class ||
+            (item.type === "constant" || item.type === "const"
+              ? "Global Constants"
+              : item.type === "property"
+              ? "Global Properties"
+              : "Global Functions");
+        } else if (item.type === "enum_member") {
+          groupKey = item.enum || "Global Enum Members";
+        } else {
+          groupKey = item.type || "other";
+        }
+        if (getTypeDisplayName(groupKey) === "Modifiers") {
+          modifierGroups.add(`${catName}-${groupKey}`);
+        }
+      });
+    });
+    setCollapsedGroups(modifierGroups);
+  }, [entry]);
 
   if (!hasChanges) {
     return <NoChanges>No API changes detected in this version</NoChanges>;
   }
 
   const renderSection = (type: "added" | "removed") => {
-    const items = categories
+    const categoryData = categories
       .map(([catName, cat]) => ({
         category: catName,
-        items: type === "added" ? (cat.added || []) : (cat.removed || []),
+        items: type === "added" ? cat.added || [] : cat.removed || [],
       }))
       .filter((c) => c.items.length > 0);
 
-    if (items.length === 0) return null;
+    if (categoryData.length === 0) return null;
 
     return (
-      <ChangeSection>
-        <ChangeSectionTitle type={type}>
-          {type === "added" ? "➕ Added" : "➖ Removed"}
-        </ChangeSectionTitle>
-        {items.map(({ category, items }) => (
-          <ChangeCategory key={category}>
-            <CategoryName>{category} ({items.length})</CategoryName>
-            <ChangeList>
-              {items.map((item, i) => (
-                <ChangeItemStyled key={i}>{formatChangeItem(item)}</ChangeItemStyled>
-              ))}
-            </ChangeList>
-          </ChangeCategory>
-        ))}
+      <ChangeSection type={type}>
+        <ChangeSectionTitle type={type}>{type === "added" ? "Added" : "Removed"}</ChangeSectionTitle>
+        {categoryData.map(({ category, items }) => {
+          // Group items by their type or class
+          const groupedItems = items.reduce((acc, item) => {
+            let groupKey: string;
+            if (
+              item.type === "function" ||
+              item.type === "method" ||
+              item.type === "constant" ||
+              item.type === "const" ||
+              item.type === "property"
+            ) {
+              groupKey =
+                item.class ||
+                (item.type === "constant" || item.type === "const"
+                  ? "Global Constants"
+                  : item.type === "property"
+                  ? "Global Properties"
+                  : "Global Functions");
+            } else if (item.type === "enum_member") {
+              groupKey = item.enum || "Global Enum Members";
+            } else {
+              groupKey = item.type || "other";
+            }
+            if (!acc[groupKey]) acc[groupKey] = [];
+            acc[groupKey].push(item);
+            return acc;
+          }, {} as Record<string, ChangeItem[]>);
+
+          return (
+            <ChangeCategory key={category}>
+              <CategoryName>
+                {category} ({items.length})
+              </CategoryName>
+              {Object.entries(groupedItems).map(([subType, subItems]) => {
+                const fullKey = `${category}-${subType}`;
+                const isCollapsed = collapsedGroups.has(fullKey);
+                return (
+                  <ChangeSubCategory key={subType} collapsed={isCollapsed}>
+                    <SubCategoryName collapsed={isCollapsed} onClick={() => toggleCollapsed(fullKey)}>
+                      {getTypeDisplayName(subType)} ({subItems.length})
+                    </SubCategoryName>
+                    {!isCollapsed && (
+                      <ChangeList>
+                        {subItems.map((item, i) => (
+                          <ChangeItemStyled key={i}>{formatChangeItem(item)}</ChangeItemStyled>
+                        ))}
+                      </ChangeList>
+                    )}
+                  </ChangeSubCategory>
+                );
+              })}
+            </ChangeCategory>
+          );
+        })}
       </ChangeSection>
     );
   };
@@ -376,7 +533,7 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
 export default function Changelog() {
   const { version: urlVersion } = useParams<{ version?: string }>();
   const history = useHistory();
-  
+
   const [index, setIndex] = useState<IndexEntry[]>([]);
   const [indexLoading, setIndexLoading] = useState(true);
   const [loadingState, setLoadingState] = useState<"idle" | "loading" | "error">("idle");
@@ -389,18 +546,18 @@ export default function Changelog() {
       setIndexLoading(false);
     });
   }, []);
-  
+
   const selectedVersion = urlVersion || (index[0]?.version ?? "");
 
   // Load changelog data when version changes
   const loadVersion = useCallback(async (version: string) => {
     if (!version) return;
-    
+
     setLoadingState("loading");
-    
+
     try {
       const entry = await loadChangelogVersion(version);
-      
+
       if (entry) {
         setCurrentEntry(entry);
         setLoadingState("idle");
@@ -537,9 +694,7 @@ export default function Changelog() {
           />
         ))}
       </SidebarWrapper>
-      <ContentWrapper>
-        {renderContent()}
-      </ContentWrapper>
+      <ContentWrapper>{renderContent()}</ContentWrapper>
     </>
   );
 }
