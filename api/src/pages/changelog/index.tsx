@@ -335,7 +335,6 @@ const DiffRow = styled.div`
 const DiffOld = styled(DiffRow)`
   background-color: rgba(239, 68, 68, 0.1);
   color: #ef4444;
-  text-decoration: line-through;
 `;
 
 const DiffNew = styled(DiffRow)`
@@ -645,8 +644,8 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
 
   return (
     <ChangeWrapper>
-      {renderSection("added")}
       {renderChangedSection()}
+      {renderSection("added")}
       {renderSection("removed")}
     </ChangeWrapper>
   );
