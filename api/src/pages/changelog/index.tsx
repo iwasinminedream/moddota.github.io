@@ -17,9 +17,24 @@ interface ChangeItem {
   category?: string;
 }
 
+interface ChangedItemDiff {
+  old: string;
+  new: string;
+}
+
+interface ChangedItem {
+  type?: string;
+  name?: string;
+  class?: string;
+  enum?: string;
+  category?: string;
+  changes: Record<string, ChangedItemDiff>;
+}
+
 interface CategoryChanges {
   added: ChangeItem[];
   removed: ChangeItem[];
+  changed?: ChangedItem[];
 }
 
 interface ChangelogEntry {
@@ -37,6 +52,7 @@ interface IndexEntry {
   time?: string;
   addedCount?: number;
   removedCount?: number;
+  changedCount?: number;
 }
 
 // Cache for loaded changelog entries
@@ -122,27 +138,32 @@ const ChangeWrapper = styled.div`
   gap: 16px;
 `;
 
-const ChangeSection = styled.div<{ type: "added" | "removed" }>`
-  background-color: ${(props) => (props.type === "added" ? "rgba(16, 185, 129, 0.05)" : "rgba(239, 68, 68, 0.05)")};
-  border-left: 4px solid ${(props) => (props.type === "added" ? "#10b981" : "#ef4444")};
+type SectionType = "added" | "removed" | "changed";
+
+const sectionColors: Record<SectionType, { bg: string; border: string; shadow: string }> = {
+  added: { bg: "rgba(16, 185, 129, 0.05)", border: "#10b981", shadow: "rgba(16, 185, 129, 0.1)" },
+  removed: { bg: "rgba(239, 68, 68, 0.05)", border: "#ef4444", shadow: "rgba(239, 68, 68, 0.1)" },
+  changed: { bg: "rgba(245, 158, 11, 0.05)", border: "#f59e0b", shadow: "rgba(245, 158, 11, 0.1)" },
+};
+
+const sectionLabels: Record<SectionType, string> = { added: "Added", removed: "Removed", changed: "Changed" };
+
+const ChangeSection = styled.div<{ type: SectionType }>`
+  background-color: ${(props) => sectionColors[props.type].bg};
+  border-left: 4px solid ${(props) => sectionColors[props.type].border};
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 2px 8px ${(props) => (props.type === "added" ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)")};
+  box-shadow: 0 2px 8px ${(props) => sectionColors[props.type].shadow};
 `;
 
-const ChangeSectionTitle = styled.div<{ type: "added" | "removed" }>`
+const ChangeSectionTitle = styled.div<{ type: SectionType }>`
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 12px;
-  color: ${(props) => (props.type === "added" ? "#10b981" : "#ef4444")};
+  color: ${(props) => sectionColors[props.type].border};
   display: flex;
   align-items: center;
   gap: 8px;
-
-  &::before {
-    content: "${(props) => (props.type === "added" ? "✅" : "❌")}";
-    font-size: 18px;
-  }
 `;
 
 const ChangeCategory = styled.div`
@@ -303,6 +324,38 @@ const CommitLink = styled.a`
   }
 `;
 
+const DiffRow = styled.div`
+  font-family: monospace;
+  font-size: 12px;
+  margin: 2px 0;
+  padding: 2px 6px;
+  border-radius: 3px;
+`;
+
+const DiffOld = styled(DiffRow)`
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  text-decoration: line-through;
+`;
+
+const DiffNew = styled(DiffRow)`
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+`;
+
+const DiffFieldLabel = styled.span`
+  font-weight: 600;
+  color: ${(props) => props.theme.textFaded};
+  margin-right: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+`;
+
+const ChangedCount = styled.span`
+  color: #f59e0b;
+  margin-left: 4px;
+`;
+
 const EmptyIndex = styled.div`
   padding: 40px;
   text-align: center;
@@ -395,9 +448,65 @@ function formatChangeItem(item: ChangeItem): React.ReactNode {
   return <>{item.name || JSON.stringify(item)}</>;
 }
 
+const diffFieldLabels: Record<string, string> = {
+  signature: "Signature",
+  returns: "Returns",
+  argsDetail: "Arguments",
+  value: "Value",
+  fieldsDetail: "Fields",
+  description: "Description",
+};
+
+function formatChangedItem(item: ChangedItem): React.ReactNode {
+  const itemName =
+    item.type === "method" && item.class
+      ? `${item.class}.${item.name}`
+      : item.type === "enum_member" && item.enum
+      ? `${item.enum}.${item.name}`
+      : item.name || "unknown";
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{itemName}</div>
+      {Object.entries(item.changes).map(([field, diff]) => (
+        <div key={field} style={{ marginLeft: 12 }}>
+          <DiffFieldLabel>{diffFieldLabels[field] || field}:</DiffFieldLabel>
+          <DiffOld>- {diff.old || "(empty)"}</DiffOld>
+          <DiffNew>+ {diff.new || "(empty)"}</DiffNew>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getGroupKeyForItem(item: { type?: string; class?: string; enum?: string }): string {
+  if (
+    item.type === "function" ||
+    item.type === "method" ||
+    item.type === "constant" ||
+    item.type === "const" ||
+    item.type === "property"
+  ) {
+    return (
+      item.class ||
+      (item.type === "constant" || item.type === "const"
+        ? "Global Constants"
+        : item.type === "property"
+        ? "Global Properties"
+        : "Global Functions")
+    );
+  }
+  if (item.type === "enum_member") {
+    return item.enum || "Global Enum Members";
+  }
+  return item.type || "other";
+}
+
 function VersionContent({ entry }: { entry: ChangelogEntry }) {
   const categories = Object.entries(entry.changes);
-  const hasChanges = categories.some(([, cat]) => (cat.added?.length || 0) > 0 || (cat.removed?.length || 0) > 0);
+  const hasChanges = categories.some(
+    ([, cat]) => (cat.added?.length || 0) > 0 || (cat.removed?.length || 0) > 0 || (cat.changed?.length || 0) > 0,
+  );
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -417,28 +526,9 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
   useEffect(() => {
     const modifierGroups = new Set<string>();
     categories.forEach(([catName, cat]) => {
-      const items = [...(cat.added || []), ...(cat.removed || [])];
+      const items = [...(cat.added || []), ...(cat.removed || []), ...(cat.changed || [])];
       items.forEach((item) => {
-        let groupKey: string;
-        if (
-          item.type === "function" ||
-          item.type === "method" ||
-          item.type === "constant" ||
-          item.type === "const" ||
-          item.type === "property"
-        ) {
-          groupKey =
-            item.class ||
-            (item.type === "constant" || item.type === "const"
-              ? "Global Constants"
-              : item.type === "property"
-              ? "Global Properties"
-              : "Global Functions");
-        } else if (item.type === "enum_member") {
-          groupKey = item.enum || "Global Enum Members";
-        } else {
-          groupKey = item.type || "other";
-        }
+        const groupKey = getGroupKeyForItem(item);
         if (getTypeDisplayName(groupKey) === "Modifiers") {
           modifierGroups.add(`${catName}-${groupKey}`);
         }
@@ -463,30 +553,10 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
 
     return (
       <ChangeSection type={type}>
-        <ChangeSectionTitle type={type}>{type === "added" ? "Added" : "Removed"}</ChangeSectionTitle>
+        <ChangeSectionTitle type={type}>{sectionLabels[type]}</ChangeSectionTitle>
         {categoryData.map(({ category, items }) => {
-          // Group items by their type or class
           const groupedItems = items.reduce((acc, item) => {
-            let groupKey: string;
-            if (
-              item.type === "function" ||
-              item.type === "method" ||
-              item.type === "constant" ||
-              item.type === "const" ||
-              item.type === "property"
-            ) {
-              groupKey =
-                item.class ||
-                (item.type === "constant" || item.type === "const"
-                  ? "Global Constants"
-                  : item.type === "property"
-                  ? "Global Properties"
-                  : "Global Functions");
-            } else if (item.type === "enum_member") {
-              groupKey = item.enum || "Global Enum Members";
-            } else {
-              groupKey = item.type || "other";
-            }
+            const groupKey = getGroupKeyForItem(item);
             if (!acc[groupKey]) acc[groupKey] = [];
             acc[groupKey].push(item);
             return acc;
@@ -498,7 +568,7 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
                 {category} ({items.length})
               </CategoryName>
               {Object.entries(groupedItems).map(([subType, subItems]) => {
-                const fullKey = `${category}-${subType}`;
+                const fullKey = `${type}-${category}-${subType}`;
                 const isCollapsed = collapsedGroups.has(fullKey);
                 return (
                   <ChangeSubCategory key={subType} collapsed={isCollapsed}>
@@ -522,9 +592,61 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
     );
   };
 
+  const renderChangedSection = () => {
+    const categoryData = categories
+      .map(([catName, cat]) => ({
+        category: catName,
+        items: cat.changed || [],
+      }))
+      .filter((c) => c.items.length > 0);
+
+    if (categoryData.length === 0) return null;
+
+    return (
+      <ChangeSection type="changed">
+        <ChangeSectionTitle type="changed">Changed</ChangeSectionTitle>
+        {categoryData.map(({ category, items }) => {
+          const groupedItems = items.reduce((acc, item) => {
+            const groupKey = getGroupKeyForItem(item);
+            if (!acc[groupKey]) acc[groupKey] = [];
+            acc[groupKey].push(item);
+            return acc;
+          }, {} as Record<string, ChangedItem[]>);
+
+          return (
+            <ChangeCategory key={category}>
+              <CategoryName>
+                {category} ({items.length})
+              </CategoryName>
+              {Object.entries(groupedItems).map(([subType, subItems]) => {
+                const fullKey = `changed-${category}-${subType}`;
+                const isCollapsed = collapsedGroups.has(fullKey);
+                return (
+                  <ChangeSubCategory key={subType} collapsed={isCollapsed}>
+                    <SubCategoryName collapsed={isCollapsed} onClick={() => toggleCollapsed(fullKey)}>
+                      {getTypeDisplayName(subType)} ({subItems.length})
+                    </SubCategoryName>
+                    {!isCollapsed && (
+                      <ChangeList>
+                        {subItems.map((item, i) => (
+                          <ChangeItemStyled key={i}>{formatChangedItem(item)}</ChangeItemStyled>
+                        ))}
+                      </ChangeList>
+                    )}
+                  </ChangeSubCategory>
+                );
+              })}
+            </ChangeCategory>
+          );
+        })}
+      </ChangeSection>
+    );
+  };
+
   return (
     <ChangeWrapper>
       {renderSection("added")}
+      {renderChangedSection()}
       {renderSection("removed")}
     </ChangeWrapper>
   );
@@ -686,6 +808,7 @@ export default function Changelog() {
                   <SidebarChangeCounts>
                     {entry.addedCount ? <AddedCount>+{entry.addedCount}</AddedCount> : null}
                     {entry.removedCount ? <RemovedCount>-{entry.removedCount}</RemovedCount> : null}
+                    {entry.changedCount ? <ChangedCount>~{entry.changedCount}</ChangedCount> : null}
                   </SidebarChangeCounts>
                 )}
               </>
