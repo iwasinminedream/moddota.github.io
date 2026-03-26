@@ -83,8 +83,8 @@ export const scopes = {
       const cleanArgName = (name: string) => name.replace(/^_arg_/, "arg");
       
       // Helper function to determine panorama API type order
-      // Interfaces (C-prefix) = 0, Panels (non-C-prefix) = 1
-      const getPanoramaApiOrder = (name: string) => name.startsWith("C") ? 0 : 1;
+      // $ global = -1 (first), Interfaces (C-prefix) = 0, Panels (non-C-prefix) = 1
+      const getPanoramaApiOrder = (name: string) => name === "$" ? -1 : name.startsWith("C") ? 0 : 1;
       
       // Convert API to class declarations
       const apiDeclarations = panoramaApi.map((iface) => ({

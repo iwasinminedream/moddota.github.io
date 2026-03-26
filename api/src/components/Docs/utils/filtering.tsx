@@ -3,6 +3,7 @@ import { getFuncDeepTypes } from "@moddota/dota-data/lib/helpers/vscripts";
 import { useParams } from "react-router-dom";
 import { composeFilters, useRouterSearch, AvailabilityFilters } from "~components/Search";
 import { isNotNil } from "~utils/types";
+import { fuzzyContains, fuzzyMatch } from "~utils/fuzzySearch";
 import * as api from "~components/Docs/api";
 
 // Helper function to filter class members by availability
@@ -179,7 +180,7 @@ export function doSearch(
     if (nameWords.length === 0) return undefined;
 
     const name = member.name.toLowerCase();
-    return nameWords.every((word) => name.includes(word));
+    return nameWords.every((word) => fuzzyContains(name, word));
   }
 
   return declarations
@@ -200,14 +201,28 @@ export function doSearch(
           : undefined;
 
       if (partialDeclaration && partialDeclaration.members.length > 0) {
-        return partialDeclaration;
+        // Calculate relevance score: best matching member score
+        const bestMemberScore = nameWords.length > 0
+          ? Math.min(
+              ...partialDeclaration.members.map((m) => {
+                const scores = nameWords.map((w) => fuzzyMatch(m.name, w));
+                return scores.every((s) => s >= 0) ? scores.reduce((a, b) => a + b, 0) : Infinity;
+              })
+            )
+          : 0;
+        return { declaration: partialDeclaration, score: bestMemberScore };
       }
 
       if (composeFilters([filterName, filterAvailability, filterDeclarationType])(declaration)) {
         const element = { ...declaration };
         if (element.kind === "class" || element.kind === "enum") element.members = [];
-        return element;
+        const declScore = nameWords.length > 0
+          ? nameWords.reduce((sum, w) => sum + Math.max(0, fuzzyMatch(element.name, w)), 0)
+          : 0;
+        return { declaration: element, score: declScore };
       }
     })
-    .filter(isNotNil);
+    .filter(isNotNil)
+    .sort((a, b) => a.score - b.score)
+    .map((x) => x.declaration);
 }
