@@ -7,7 +7,7 @@ import { ContentWrapper, ListItem, StyledSearchBox, TextMessage } from "~compone
 import { SidebarWrapper } from "~components/layout/Sidebar";
 import { ScrollableList, LazyList } from "~components/Lists";
 import { useRouterSearch } from "~components/Search";
-import { fuzzySort } from "~utils/fuzzySearch";
+
 
 const modifiers = modifiersData as Record<string, string[]>;
 
@@ -121,7 +121,7 @@ export default function ModifiersPage() {
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = fuzzySort(filtered, (m) => m.name, query);
+      filtered = filtered.filter((m) => m.name.toLowerCase().includes(query));
     }
 
     return filtered;
