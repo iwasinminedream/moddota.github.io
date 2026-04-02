@@ -17,10 +17,17 @@ const EnumMemberWrapper = styled(CommonGroupWrapper)`
   padding: 2px 5px;
 `;
 
+const OverflowMarker = styled.span`
+  color: #e8912d;
+  font-weight: bold;
+  cursor: help;
+`;
+
 const EnumMember: React.FC<api.EnumMember> = (props) => (
   <EnumMemberWrapper>
     <CommonGroupHeader>
       <CommonGroupSignature>
+        {props.overflow && <OverflowMarker title="Value exceeds 2^31. In Lua this is 0 — use the enum name in KV files instead.">* </OverflowMarker>}
         {props.name} = <ColoredSyntax kind="literal">{props.value}</ColoredSyntax>
       </CommonGroupSignature>
     </CommonGroupHeader>
