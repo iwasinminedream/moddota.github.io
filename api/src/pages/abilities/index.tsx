@@ -9,6 +9,7 @@ import { ContentWrapper, ListItem, StyledSearchBox, TextMessage } from "~compone
 import { SidebarWrapper } from "~components/layout/Sidebar";
 import { ScrollableList } from "~components/Lists";
 import { useRouterSearch } from "~components/Search";
+import { fuzzyMatch } from "~utils/fuzzySearch";
 
 type KVValue = string | number | KVObject;
 type KVObject = { [key: string]: KVValue };
@@ -475,8 +476,17 @@ export default function AbilitiesPage() {
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((a) => a.name.toLowerCase().includes(query));
+      const query = searchQuery.replace(/\s+/g, "");
+      filtered = filtered
+        .map((a) => {
+          const nameScore = fuzzyMatch(a.name, query);
+          const categoryScore = fuzzyMatch(a.category, query);
+          const score = Math.min(nameScore, categoryScore);
+          return { item: a, score };
+        })
+        .filter((x) => isFinite(x.score))
+        .sort((a, b) => a.score - b.score)
+        .map((x) => x.item);
     }
 
     return filtered;

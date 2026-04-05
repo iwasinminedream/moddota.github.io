@@ -1,6 +1,6 @@
 /**
  * Fuzzy match: checks if all characters of `query` appear in `text` in order.
- * Returns a score (lower is better) or -1 if no match.
+ * Returns a score (lower is better) or Infinity if no match.
  * 
  * Scoring favors:
  * - Consecutive character matches (less gaps = better)
@@ -16,7 +16,7 @@ export function fuzzyMatch(text: string, query: string): number {
   for (let ti = 0; ti < textLower.length && qi < queryLower.length; ti++) {
     if (textLower[ti] === queryLower[qi]) qi++;
   }
-  if (qi < queryLower.length) return -1;
+  if (qi < queryLower.length) return Infinity;
 
   // Score the match quality
   let score = 0;
@@ -63,7 +63,7 @@ export function fuzzyMatch(text: string, query: string): number {
       if (prevMatchIdx >= 0 && t === prevMatchIdx + 1) break;
     }
     
-    if (bestPos === -1) return -1;
+    if (bestPos === -1) return Infinity;
     
     score += bestPosScore;
     prevMatchIdx = bestPos;
@@ -85,7 +85,7 @@ export function fuzzyMatch(text: string, query: string): number {
  * Check if text fuzzy-matches the query. Simple boolean version.
  */
 export function fuzzyContains(text: string, query: string): boolean {
-  return fuzzyMatch(text, query) >= 0;
+  return isFinite(fuzzyMatch(text, query));
 }
 
 /**
@@ -98,7 +98,7 @@ export function fuzzySort<T>(
 ): T[] {
   return items
     .map((item) => ({ item, score: fuzzyMatch(getText(item), query) }))
-    .filter((x) => x.score >= 0)
+    .filter((x) => isFinite(x.score))
     .sort((a, b) => a.score - b.score)
     .map((x) => x.item);
 }
