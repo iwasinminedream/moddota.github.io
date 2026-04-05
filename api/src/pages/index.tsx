@@ -7,6 +7,7 @@ const VScriptsPage = React.lazy(() => import(/* webpackChunkName: "vscripts" */ 
 const PanoramaApiPage = React.lazy(() => import(/* webpackChunkName: "panorama_api" */ "./panorama/api"));
 const PanoramaCssPage = React.lazy(() => import(/* webpackChunkName: "panorama_css" */ "./panorama/css"));
 const PanoramaEventsPage = React.lazy(() => import(/* webpackChunkName: "panorama_events" */ "./panorama/events"));
+const AbilitiesPage = React.lazy(() => import(/* webpackChunkName: "abilities" */ "./abilities"));
 const ModifiersPage = React.lazy(() => import(/* webpackChunkName: "modifiers" */ "./modifiers"));
 const ConvarsPage = React.lazy(() => import(/* webpackChunkName: "convars" */ "./convars"));
 const ChangelogPage = React.lazy(() => import(/* webpackChunkName: "changelog" */ "./changelog"));
@@ -28,6 +29,7 @@ export function AppRoutes() {
       <Route path="/panorama/api/:scope?" component={PanoramaApiPage} />
       <Route path="/panorama/css/:scope?" component={PanoramaCssPage} />
       <Route path="/panorama/events/:scope?" component={PanoramaEventsPage} />
+      <Route path="/abilities" component={AbilitiesPage} />
       <Route path="/modifiers" component={ModifiersPage} />
       <Route path="/convars" component={ConvarsPage} />
       <Route path="/changelog/:version?" component={ChangelogPage} />

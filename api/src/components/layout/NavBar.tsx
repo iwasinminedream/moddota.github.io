@@ -17,6 +17,7 @@ export const NavBar = () => (
     <NavBarLink to="/panorama/api">Panorama API</NavBarLink>
     <NavBarLink to="/panorama/css">Panorama CSS</NavBarLink>
     <NavBarLink to="/panorama/events">Panorama Events</NavBarLink>
+    <NavBarLink to="/abilities">Abilities</NavBarLink>
     <NavBarLink to="/modifiers">Modifiers</NavBarLink>
     <NavBarLink to="/convars">Convars</NavBarLink>
     <NavBarLink to="/changelog">Changelog</NavBarLink>
