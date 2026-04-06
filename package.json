@@ -23,7 +23,6 @@
         ]
     },
     "dependencies": {
-        "@types/classnames": "^2.2.10",
         "@types/react-dom": "^16.9.8",
         "@types/webpack-env": "^1.15.2",
         "react": "^16.14.0",
@@ -37,7 +36,6 @@
         "@docusaurus/preset-classic": "^2.1.0",
         "@docusaurus/types": "^2.1.0",
         "@types/react": "^17.0.50",
-        "classnames": "^2.3.1",
         "docusaurus-plugin-sass": "^0.2.2",
         "fork-ts-checker-webpack-plugin": "^5.2.1",
         "prettier": "^2.8.8",
