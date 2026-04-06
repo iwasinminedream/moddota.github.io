@@ -176,7 +176,7 @@ Apart from this values specially related to items, you can add ***everything*** 
 { ... }
 ```
 
-**[Ability Events](datadriven/datadriven-ability-events-modifiers)** like `"OnSpellStart"`, `"OnOwnerDied"` or `"OnEquip"` also go here in the main block.
+**Ability Events** like `"OnSpellStart"`, `"OnOwnerDied"` or `"OnEquip"` also go here in the main block.
 
 You need at least set the AbilityBehavior for your item to not be active (if you don't, it will default to `DOTA_ABILITY_BEHAVIOR_UNIT_TARGET`).
 

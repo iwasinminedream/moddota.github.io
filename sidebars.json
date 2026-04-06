@@ -45,21 +45,6 @@
                     ]
                 },
                 "abilities/reutilizing-built-in-modifiers",
-                {
-                    "type": "category",
-                    "label": "Datadriven",
-                    "items": [
-                        "abilities/datadriven/datadriven-ability-events-modifiers",
-                        "abilities/datadriven/all-about-the-target",
-                        "abilities/datadriven/channeling-animations",
-                        "abilities/datadriven/invisibility-ability-example",
-                        "abilities/datadriven/illusion-ability-example",
-                        "abilities/datadriven/rotate-ability-example",
-                        "abilities/datadriven/point-channeling-aoe-ability-example",
-                        "abilities/datadriven/apply-hero-and-creep-modifier-durations",
-                        "abilities/datadriven/physics-ability-example-exorcism"
-                    ]
-                },
                 "abilities/modifier-properties-in-tooltips",
                 "abilities/server-to-client"
             ]
@@ -117,7 +102,6 @@
                     "label": "Custom Game Setup",
                     "href": "https://developer.valvesoftware.com/wiki/Dota_2_Workshop_Tools/Custom_Game_Setup"
                 },
-                "panorama/hiding-hud-with-sethudvisible",
                 "panorama/webpack",
                 "panorama/react"
             ]
