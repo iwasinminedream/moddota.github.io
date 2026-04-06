@@ -13,12 +13,13 @@ module.exports = {
                 src: "images/logo.svg",
             },
             items: [
-                { position: "left", label: "Lua API", href: "https://iwasinminedream.github.io/moddota.github.io/api" },
+                { position: "left", label: "Lua API", href: "https://iwasinminedream.github.io/moddota.github.io/api/" },
                 {
                     position: "left",
                     label: "Panorama API",
                     href: "https://developer.valvesoftware.com/wiki/Dota_2_Workshop_Tools/Panorama/Javascript/API",
                 },
+                { position: "left", label: "New Article", to: "/new-article" },
                 { position: "right", label: "Discord", href: "https://discord.gg/gRmZgvz" },
             ],
         },
@@ -42,7 +43,7 @@ module.exports = {
                     path: "_articles",
                     routeBasePath: "/",
                     sidebarPath: require.resolve("./sidebars.json"),
-                    editUrl: "https://github.com/ModDota/moddota.github.io/edit/source/",
+                    editUrl: "https://github.com/iwasinminedream/moddota.github.io/edit/source/",
                     remarkPlugins: [
                         require("./docusaurus/remark-component-provider"),
                         require("./docusaurus/remark-remove"),
