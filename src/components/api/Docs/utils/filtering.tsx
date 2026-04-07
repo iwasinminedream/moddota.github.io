@@ -64,6 +64,7 @@ export function getFilteredData(
       break;
     default:
       if (scope) declarations = declarations.filter((x) => x.name === scope);
+      else return { data: [], isSearching: false };
   }
 
   declarations = filterDeclarationsByAvailability(declarations, availabilityFilters);

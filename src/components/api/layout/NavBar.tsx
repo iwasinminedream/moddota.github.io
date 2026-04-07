@@ -60,12 +60,7 @@ export function NavBar() {
             padding: "0 20px",
           }}
         >
-          <svg width="36" height="32" viewBox="0 0 36 32" style={{ marginRight: 8 }}>
-            <rect width="36" height="32" rx="4" fill="var(--color-highlight)" />
-            <text x="18" y="22" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="sans-serif">
-              MD
-            </text>
-          </svg>
+          <img src={`${base}images/moddota-logo.svg`} width="36" height="32" alt="ModDota" style={{ marginRight: 8 }} />
           <span className="brand-text">ModDota</span>
         </a>
 
