@@ -302,29 +302,38 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
               </span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
                 {modifiers.map((m) => (
-                  <span
-                    key={m}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      fontSize: 11,
-                      padding: "2px 8px",
-                      borderRadius: 3,
-                      background: "rgba(255,255,255,0.06)",
-                      color: "#abb2bf",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      fontFamily: "monospace",
-                    }}
-                  >
-                    {m}
-                    <span
+                  <span key={m} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                    <code
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 3,
+                        background: "rgba(255,255,255,0.06)",
+                        color: "#abb2bf",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      {m}
+                    </code>
+                    <button
                       onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(m); }}
                       title="Copy modifier name"
-                      style={{ cursor: "pointer", opacity: 0.5, fontSize: 10, lineHeight: 1 }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "2px 3px",
+                        fontSize: 10,
+                        opacity: 0.4,
+                        color: "var(--color-text-faded)",
+                        lineHeight: 1,
+                        borderRadius: 2,
+                      }}
+                      onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "1"; }}
+                      onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "0.4"; }}
                     >
                       📋
-                    </span>
+                    </button>
                   </span>
                 ))}
               </div>
@@ -332,22 +341,37 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
           )}
 
           {/* KV data */}
-          {typeof kv === "object" && (
-            <div style={{ marginTop: 6, overflowX: "auto" }}>
-              {Object.entries(kv).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="kv-row"
-                  style={{ display: "flex", padding: "2px 0", alignItems: "baseline" }}
-                >
-                  <span style={{ color: "var(--color-text-faded)", minWidth: 220, flexShrink: 0, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>
-                    {k}
-                  </span>
-                  <KVValueRenderer value={v} depth={0} />
-                </div>
-              ))}
-            </div>
-          )}
+          {typeof kv === "object" && (() => {
+            const entries = Object.entries(kv);
+            const abilityValues = entries.filter(([key]) => key === "AbilityValues");
+            const rest = entries.filter(([key]) => key !== "AbilityValues");
+            return (
+              <div style={{ marginTop: 6, overflowX: "auto" }}>
+                {rest.map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="kv-row"
+                    style={{ display: "flex", padding: "2px 0", alignItems: "baseline" }}
+                  >
+                    <span style={{ color: "var(--color-text-faded)", minWidth: 220, flexShrink: 0, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>
+                      {k}
+                    </span>
+                    <KVValueRenderer value={v} depth={0} />
+                  </div>
+                ))}
+                {abilityValues.map(([key, value]) => (
+                  <div key={key} style={{ marginTop: 4 }}>
+                    <div style={{ color: "var(--color-text-faded)", fontWeight: 500, fontFamily: "monospace", fontSize: 12, marginBottom: 2 }}>
+                      {key}
+                    </div>
+                    <pre style={{ margin: 0, fontFamily: "monospace", fontSize: 12, color: "var(--color-text)", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                      {kvToText(value, 0)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {typeof kv === "string" && (
             <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--color-text)", marginTop: 6 }}>

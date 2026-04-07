@@ -55,7 +55,7 @@ function renderItem(declaration: Declaration, style?: React.CSSProperties) {
   );
 }
 
-export function ContentList() {
+export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
   const { root, declarations } = useContext(DeclarationsContext);
   const showAvailabilityFilters = root === "/vscripts";
 
@@ -93,6 +93,9 @@ export function ContentList() {
   const effectiveScope = search ? "" : scope;
   const { data, isSearching } = getFilteredData(declarations, search, effectiveScope, { serverEnabled, clientEnabled });
 
+  // Show placeholder only when page has hoist sections and nothing is selected
+  const showPlaceholder = hasHoist && !search && !scope;
+
   return (
     <AvailabilityFiltersContext.Provider value={{ serverEnabled, clientEnabled }}>
       <main className="api-content-main" style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "0 0 0 24px" }}>
@@ -105,7 +108,11 @@ export function ContentList() {
           onClientToggle={handleClientToggle}
         />
 
-        {data.length > 0 ? (
+        {showPlaceholder ? (
+          <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>
+            Choose a category or use the search bar...
+          </div>
+        ) : data.length > 0 ? (
           isSearching ? (
             <LazyList data={data} render={renderItem} />
           ) : (
@@ -113,13 +120,9 @@ export function ContentList() {
           )
         ) : isSearching ? (
           <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>No results found</div>
-        ) : (
-          <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>
-            Choose a category or use the search bar...
-          </div>
-        )}
+        ) : null}
 
-        {!isSearching && !data.length && <Author />}
+        {showPlaceholder && <Author />}
       </main>
     </AvailabilityFiltersContext.Provider>
   );

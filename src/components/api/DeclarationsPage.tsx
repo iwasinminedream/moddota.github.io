@@ -18,7 +18,7 @@ export function DeclarationsPage({
       <NavBar />
       <div style={{ display: "flex", flex: 1, minHeight: 0 }} className="api-page-content">
         <DeclarationsSidebar hoist={hoist} />
-        <ContentList />
+        <ContentList hasHoist={hoist.length > 0} />
       </div>
       <style>{`
         @media (max-width: 768px) {
