@@ -10,13 +10,14 @@ const base = import.meta.env.BASE_URL;
 
 function getHref(item: SidebarItem): string | undefined {
   if (item.href) return item.href;
+  if (item.slug === 'index') return base;
   if (item.slug) return `${base}${item.slug}`;
   return undefined;
 }
 
 function isActive(item: SidebarItem): boolean {
   if (!item.slug) return false;
-  const itemPath = `${base}${item.slug}`;
+  const itemPath = item.slug === 'index' ? base : `${base}${item.slug}`;
   const normalizedCurrent = currentPath.replace(/\/$/, '');
   const normalizedItem = itemPath.replace(/\/$/, '');
   return normalizedCurrent === normalizedItem;

@@ -11,6 +11,23 @@ import type { Declaration } from "./api";
 import { DeclarationsContext } from "./DeclarationsContext";
 import { AvailabilityFiltersContext, SearchBox, getSearchFromUrl } from "../Search";
 
+function getBase(): string {
+  return document.querySelector("base")?.getAttribute("href") || "/";
+}
+
+/** Extract the scope segment from the current URL relative to the API root.
+ *  e.g. for path /moddota.github.io/api/vscripts/CDOTA_BaseNPC and root=/vscripts
+ *  returns "CDOTA_BaseNPC". For the base path returns "". */
+function getScopeFromUrl(root: string): string {
+  const path = window.location.pathname;
+  const base = getBase();
+  // Expected path pattern: {base}api{root}/{scope}
+  const prefix = `${base}api${root}`;
+  if (!path.startsWith(prefix)) return "";
+  const rest = path.slice(prefix.length).replace(/^\//, "").replace(/\/$/, "");
+  return rest;
+}
+
 function renderItem(declaration: Declaration, style?: React.CSSProperties) {
   let children: JSX.Element;
   switch (declaration.kind) {
@@ -47,22 +64,17 @@ export function ContentList() {
   const [search, setSearch] = useState(() => getSearchFromUrl());
   const [scope, setScope] = useState(() => {
     if (typeof window === "undefined") return "";
-    const path = window.location.pathname;
-    const parts = path.split("/").filter(Boolean);
-    // scope is the last segment after the route base
-    return parts[parts.length - 1] || "";
+    return getScopeFromUrl(root);
   });
 
   useEffect(() => {
     const handler = () => {
       setSearch(getSearchFromUrl());
-      const path = window.location.pathname;
-      const parts = path.split("/").filter(Boolean);
-      setScope(parts[parts.length - 1] || "");
+      setScope(getScopeFromUrl(root));
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
-  }, []);
+  }, [root]);
 
   const handleServerToggle = useCallback(() => {
     if (!clientEnabled && serverEnabled) return;
@@ -78,8 +90,6 @@ export function ContentList() {
     if (!newVal) setServerEnabled(true);
   }, [serverEnabled, clientEnabled]);
 
-  // Determine scope: for pages like /api/vscripts/CDOTA_BaseNPC, scope is CDOTA_BaseNPC
-  // For search, we use the search query
   const effectiveScope = search ? "" : scope;
   const { data, isSearching } = getFilteredData(declarations, search, effectiveScope, { serverEnabled, clientEnabled });
 

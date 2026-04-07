@@ -7,7 +7,7 @@ import path from 'path';
 
 export default defineConfig({
   site: 'https://iwasinminedream.github.io',
-  base: '/moddota.github.io',
+  base: '/moddota.github.io/',
   output: 'static',
   integrations: [
     react(),

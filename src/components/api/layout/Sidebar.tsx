@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useCallback } from "react";
 import { KindIcon, type IconKind } from "../KindIcon";
 import type { Declaration } from "../Docs/api";
 import { DeclarationsContext } from "../Docs/DeclarationsContext";
@@ -10,9 +10,13 @@ export type HoistType = {
   scope: string;
 };
 
+function getBase(): string {
+  return document.querySelector("base")?.getAttribute("href") || "/";
+}
+
 export function DeclarationsSidebar({ hoist }: { hoist: HoistType[] }) {
   const { root, declarations } = useContext(DeclarationsContext);
-  const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
+  const base = typeof window !== "undefined" ? getBase() : "/";
   const hoistedKinds = hoist.map((h) => h.scope);
 
   const filteredDeclarations = declarations.filter(
@@ -70,9 +74,19 @@ function SidebarElement({
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
   const isActive = currentPath === to || currentPath === to + "/";
 
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      window.history.pushState({}, "", to);
+      window.dispatchEvent(new Event("popstate"));
+    },
+    [to],
+  );
+
   return (
     <a
       href={to}
+      onClick={handleClick}
       style={{
         background: isActive ? "var(--color-sidebar-hover)" : "var(--color-sidebar)",
         borderBottom: isActive ? "3px solid var(--color-highlight)" : "3px solid transparent",
