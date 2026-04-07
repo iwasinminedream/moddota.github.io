@@ -64,6 +64,7 @@ export function getFilteredData(
       break;
     default:
       if (scope) declarations = declarations.filter((x) => x.name === scope);
+      else if (declarations.length > 0 && declarations[0].kind === "cssProperty") break;
       else return { data: [], isSearching: false };
   }
 

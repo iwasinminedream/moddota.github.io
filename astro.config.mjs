@@ -3,16 +3,20 @@ import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import tailwindcss from '@tailwindcss/vite';
 import remarkRemove from './src/plugins/remark-remove.mjs';
+import remarkComponents from './src/plugins/remark-components.mjs';
 import path from 'path';
 
 export default defineConfig({
   site: 'https://iwasinminedream.github.io',
   base: '/moddota.github.io/',
   output: 'static',
+  markdown: {
+    remarkPlugins: [remarkRemove, remarkComponents],
+  },
   integrations: [
     react(),
     mdx({
-      remarkPlugins: [remarkRemove],
+      remarkPlugins: [remarkRemove, remarkComponents],
     }),
   ],
   vite: {
