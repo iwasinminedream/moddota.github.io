@@ -84,88 +84,48 @@ function getHeroIconUrl(heroName: string): string {
   return `${base}images/heroes/${heroName}.png`;
 }
 
-// --- KV Table Display ---
+// --- KV Display (flat key-value rows, nested expand/collapse) ---
 
-function KVValueDisplay({ value, depth }: { value: KVValue; depth: number }) {
-  if (typeof value !== "object" || value === null) {
-    return <span style={{ color: "#98c379" }}>{String(value)}</span>;
-  }
-  return <KVTable obj={value} depth={depth} />;
-}
+function KVValueRenderer({ value, depth = 0 }: { value: KVValue; depth?: number }) {
+  const [expanded, setExpanded] = useState(depth < 1);
 
-function KVTable({ obj, depth }: { obj: KVObject; depth: number }) {
-  const [collapsed, setCollapsed] = useState(depth > 1);
-  const entries = Object.entries(obj);
-
-  if (entries.length === 0) {
-    return <span style={{ color: "var(--color-text-faded)" }}>{"{}"}</span>;
+  if (typeof value === "string" || typeof value === "number") {
+    return <span style={{ color: "var(--color-text)", fontFamily: "monospace", fontSize: 12, wordBreak: "break-all" }}>{String(value)}</span>;
   }
 
-  if (collapsed) {
+  if (typeof value === "object" && value !== null) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) return <span style={{ color: "var(--color-text)", fontFamily: "monospace", fontSize: 12 }}>{"{}"}</span>;
+
     return (
-      <span
-        onClick={() => setCollapsed(false)}
-        style={{ cursor: "pointer", color: "var(--color-highlight)", fontSize: 12, userSelect: "none" }}
-        title="Click to expand"
-      >
-        {"{ ... "}{entries.length}{" keys }"}
-      </span>
+      <div>
+        <span
+          onClick={() => setExpanded(!expanded)}
+          style={{ cursor: "pointer", color: "var(--color-highlight)", fontSize: 11, marginLeft: 4, userSelect: "none" }}
+        >
+          {expanded ? "[-]" : `[+] (${entries.length} fields)`}
+        </span>
+        {expanded && (
+          <div style={{ marginLeft: 16, paddingLeft: 8, borderLeft: "1px solid var(--color-group-border)" }}>
+            {entries.map(([k, v]) => (
+              <div
+                key={k}
+                className="kv-row"
+                style={{ display: "flex", padding: "2px 0", alignItems: "baseline" }}
+              >
+                <span style={{ color: "var(--color-text-faded)", minWidth: 220, flexShrink: 0, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>
+                  {k}
+                </span>
+                <KVValueRenderer value={v} depth={depth + 1} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   }
 
-  return (
-    <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12, fontFamily: "monospace" }}>
-      <tbody>
-        {depth > 0 && (
-          <tr>
-            <td colSpan={2} style={{ paddingBottom: 2 }}>
-              <span
-                onClick={() => setCollapsed(true)}
-                style={{ cursor: "pointer", color: "var(--color-text-faded)", fontSize: 11, userSelect: "none" }}
-                title="Click to collapse"
-              >
-                [-]
-              </span>
-            </td>
-          </tr>
-        )}
-        {entries.map(([key, val]) => {
-          const isNested = typeof val === "object" && val !== null;
-          return (
-            <tr key={key}>
-              <td
-                style={{
-                  padding: "2px 12px 2px 0",
-                  verticalAlign: "top",
-                  whiteSpace: "nowrap",
-                  color: "#e06c75",
-                  fontWeight: 600,
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
-                  paddingLeft: depth * 16,
-                }}
-              >
-                {key}
-              </td>
-              <td
-                style={{
-                  padding: "2px 0",
-                  verticalAlign: "top",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
-                  wordBreak: "break-word",
-                }}
-              >
-                {isNested ? (
-                  <KVValueDisplay value={val} depth={depth + 1} />
-                ) : (
-                  <span style={{ color: "#98c379" }}>{String(val)}</span>
-                )}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
+  return <span style={{ color: "var(--color-text)", fontFamily: "monospace", fontSize: 12 }}>{String(value)}</span>;
 }
 
 // --- Copy Button ---
@@ -342,19 +302,30 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
               </span>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
                 {modifiers.map((m) => (
-                  <code
+                  <span
                     key={m}
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                       fontSize: 11,
                       padding: "2px 8px",
                       borderRadius: 3,
                       background: "rgba(255,255,255,0.06)",
                       color: "#abb2bf",
                       border: "1px solid rgba(255,255,255,0.08)",
+                      fontFamily: "monospace",
                     }}
                   >
                     {m}
-                  </code>
+                    <span
+                      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(m); }}
+                      title="Copy modifier name"
+                      style={{ cursor: "pointer", opacity: 0.5, fontSize: 10, lineHeight: 1 }}
+                    >
+                      📋
+                    </span>
+                  </span>
                 ))}
               </div>
             </div>
@@ -362,33 +333,24 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
 
           {/* KV data */}
           {typeof kv === "object" && (
-            <div
-              style={{
-                marginTop: 6,
-                padding: 10,
-                borderRadius: 4,
-                background: "rgba(0,0,0,0.25)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                overflowX: "auto",
-              }}
-            >
-              <KVTable obj={kv} depth={0} />
+            <div style={{ marginTop: 6, overflowX: "auto" }}>
+              {Object.entries(kv).map(([k, v]) => (
+                <div
+                  key={k}
+                  className="kv-row"
+                  style={{ display: "flex", padding: "2px 0", alignItems: "baseline" }}
+                >
+                  <span style={{ color: "var(--color-text-faded)", minWidth: 220, flexShrink: 0, fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>
+                    {k}
+                  </span>
+                  <KVValueRenderer value={v} depth={0} />
+                </div>
+              ))}
             </div>
           )}
 
           {typeof kv === "string" && (
-            <div
-              style={{
-                marginTop: 6,
-                padding: 10,
-                borderRadius: 4,
-                background: "rgba(0,0,0,0.25)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                fontFamily: "monospace",
-                fontSize: 13,
-                color: "#98c379",
-              }}
-            >
+            <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--color-text)", marginTop: 6 }}>
               {kv}
             </div>
           )}
@@ -431,7 +393,8 @@ function SidebarLink({
         alignItems: "center",
         gap: 6,
         fontSize: 13,
-        marginBottom: 1,
+        marginBottom: 2,
+        borderBottom: "1px solid var(--color-group-border)",
         transition: "background 0.1s ease",
       }}
     >
@@ -657,6 +620,13 @@ export function AbilitiesPage() {
         }
         .api-sidebar a:hover {
           background: var(--color-sidebar-hover) !important;
+        }
+        .kv-row:hover {
+          background: var(--color-sidebar);
+          border-radius: 2px;
+        }
+        @media (max-width: 768px) {
+          .kv-row > span:first-child { min-width: 120px !important; }
         }
       `}</style>
     </>
