@@ -17,23 +17,6 @@
 .DocSearch-Button-Keys {
     display: none !important;
 }
-
-.navbar__link--api {
-    text-decoration: none;
-    color: var(--ifm-navbar-link-color);
-    font-weight: var(--ifm-font-weight-semibold);
-    padding: 0.25rem 0;
-
-    &:hover {
-        color: var(--ifm-navbar-link-hover-color);
-    }
-
-    .iconExternalLink {
-        margin-left: 4px;
-        vertical-align: middle;
-    }
-}
-
 :not(.navbar-sidebar__items) > .menu .menu__link {
     &[href="/"]::after,
     &[href="/abilities/simple-custom-ability"]::after,
