@@ -121,6 +121,10 @@ const sectionConfig: Record<SectionType, { label: string; color: string; bgAlpha
 
 // Category display order
 const categoryOrder = [
+  "Abilities",
+  "Units",
+  "Ability KV Properties",
+  "Unit KV Properties",
   "Lua API",
   "Panorama API",
   "Lua Enums",
@@ -405,6 +409,28 @@ const DiffNew = styled(DiffRow)`
   }
 `;
 
+// Ability/Unit items
+const AbilityName = styled.span`
+  font-weight: 600;
+  color: #d97706;
+`;
+
+const UnitName = styled.span`
+  font-weight: 600;
+  color: #0891b2;
+`;
+
+const KvPropertyName = styled.span`
+  font-weight: 600;
+  color: #7c3aed;
+`;
+
+const KvPropKey = styled.span`
+  font-weight: 600;
+  color: ${(props) => props.theme.textFaded};
+  font-size: 12px;
+`;
+
 // Version header
 const VersionHeaderCard = styled(CommonGroupWrapper)`
   margin: 6px;
@@ -501,7 +527,78 @@ const diffFieldLabels: Record<string, string> = {
   value: "Value",
   fieldsDetail: "Fields",
   description: "Description",
+  signature: "Signature",
 };
+
+/** Parse a fieldsDetail string (Key=Value, Key2=Value2) into a map. */
+function parseFieldsDetail(s: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!s) return result;
+  // Split by ", " followed by uppercase letter (KV property names are PascalCase)
+  for (const part of s.split(/, (?=[A-Z])/)) {
+    const eq = part.indexOf("=");
+    if (eq > 0) {
+      result[part.slice(0, eq)] = part.slice(eq + 1);
+    }
+  }
+  return result;
+}
+
+interface FieldDiff {
+  key: string;
+  old?: string;
+  new?: string;
+  subDiffs?: { key: string; old?: string; new?: string }[];
+}
+
+/** Try to parse a string as JSON object, return null if not an object. */
+function tryParseJsonObject(s: string): Record<string, unknown> | null {
+  if (!s || s[0] !== "{") return null;
+  try {
+    const parsed = JSON.parse(s);
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) return parsed;
+  } catch { /* not JSON */ }
+  return null;
+}
+
+/** Stringify a value for display: flatten simple objects to "value", show others as JSON. */
+function formatSubValue(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v !== "object") return String(v);
+  return JSON.stringify(v);
+}
+
+/** Compute per-property diffs from two fieldsDetail strings, with sub-diffs for JSON values. */
+function diffFieldsDetail(oldStr: string, newStr: string): FieldDiff[] {
+  const oldMap = parseFieldsDetail(oldStr);
+  const newMap = parseFieldsDetail(newStr);
+  const allKeys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
+  const diffs: FieldDiff[] = [];
+  for (const key of allKeys) {
+    if (oldMap[key] !== newMap[key]) {
+      // Try to parse both as JSON objects for sub-diffing
+      const oldObj = tryParseJsonObject(oldMap[key]);
+      const newObj = tryParseJsonObject(newMap[key]);
+      if (oldObj && newObj) {
+        const subKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+        const subDiffs: { key: string; old?: string; new?: string }[] = [];
+        for (const sk of subKeys) {
+          const ov = formatSubValue(oldObj[sk]);
+          const nv = formatSubValue(newObj[sk]);
+          if (ov !== nv) {
+            subDiffs.push({ key: sk, old: ov || undefined, new: nv || undefined });
+          }
+        }
+        if (subDiffs.length > 0) {
+          diffs.push({ key, subDiffs });
+        }
+      } else {
+        diffs.push({ key, old: oldMap[key], new: newMap[key] });
+      }
+    }
+  }
+  return diffs;
+}
 
 /** Determine group key for an added/removed item. */
 function getGroupKey(item: { type?: string; class?: string; enum?: string; category?: string }): string {
@@ -514,6 +611,9 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
   if (item.type === "enum") return "__enums__";
   if (item.type === "event") return "__events__";
   if (item.type === "convar") return "__convars__";
+  if (item.type === "ability") return "__abilities__";
+  if (item.type === "unit") return "__units__";
+  if (item.type === "kv_property") return "__kv_properties__";
   if (item.type === "modifier") return item.category || "Modifiers";
   if (item.type === "property") return item.class || "Properties";
   return item.type || "Other";
@@ -523,6 +623,8 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
 function getChangedGroupKey(item: { type?: string; class?: string; enum?: string }): string {
   if (item.type === "method" || item.type === "function") return item.class || "Global Functions";
   if (item.type === "enum_member") return item.enum || "Enums";
+  if (item.type === "ability") return "__abilities__";
+  if (item.type === "unit") return "__units__";
   return item.type || "Other";
 }
 
@@ -543,6 +645,9 @@ function getGroupLabel(key: string): string {
     __enums__: "Enums",
     __events__: "Events",
     __convars__: "Console Variables",
+    __abilities__: "Abilities",
+    __units__: "Units",
+    __kv_properties__: "KV Properties",
   };
   return labels[key] || key;
 }
@@ -622,24 +727,56 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
       </>
     );
   }
+  if (item.type === "ability") return <AbilityName>{item.name}</AbilityName>;
+  if (item.type === "unit") return <UnitName>{item.name}</UnitName>;
+  if (item.type === "kv_property") return <KvPropertyName>{item.name}</KvPropertyName>;
   return <ItemName>{item.name || JSON.stringify(item)}</ItemName>;
 }
 
 function renderChangedItem(item: ChangedItem): React.ReactNode {
+  const isAbilityOrUnit = item.type === "ability" || item.type === "unit";
+  const NameComponent = item.type === "ability" ? AbilityName : item.type === "unit" ? UnitName : ItemSignature;
+
   return (
     <ChangedItemBlock>
       <ChangedItemName>
-        <ItemSignature>{item.name}</ItemSignature>
+        <NameComponent>{item.name}</NameComponent>
       </ChangedItemName>
-      {Object.entries(item.changes).map(([field, diff]) => (
-        <DiffBlock key={field}>
-          {diffFieldLabels[field] && (
-            <DiffFieldLabel>{diffFieldLabels[field]}:</DiffFieldLabel>
-          )}
-          <DiffOld>{diff.old || "(empty)"}</DiffOld>
-          <DiffNew>{diff.new || "(empty)"}</DiffNew>
-        </DiffBlock>
-      ))}
+      {Object.entries(item.changes).map(([field, diff]) => {
+        // For abilities/units, parse fieldsDetail into per-property diffs
+        if (isAbilityOrUnit && field === "fieldsDetail") {
+          const propDiffs = diffFieldsDetail(diff.old, diff.new);
+          if (propDiffs.length === 0) return null;
+          return propDiffs.map((pd) => (
+            <DiffBlock key={pd.key}>
+              <KvPropKey>{pd.key}:</KvPropKey>
+              {pd.subDiffs ? (
+                pd.subDiffs.map((sd) => (
+                  <div key={sd.key} style={{ marginLeft: 8, marginBottom: 2 }}>
+                    <KvPropKey>{sd.key}:</KvPropKey>
+                    {sd.old !== undefined && <DiffOld>{sd.old}</DiffOld>}
+                    {sd.new !== undefined && <DiffNew>{sd.new}</DiffNew>}
+                  </div>
+                ))
+              ) : (
+                <>
+                  {pd.old !== undefined && <DiffOld>{pd.old}</DiffOld>}
+                  {pd.new !== undefined && <DiffNew>{pd.new}</DiffNew>}
+                </>
+              )}
+            </DiffBlock>
+          ));
+        }
+        return (
+          <DiffBlock key={field}>
+            {diffFieldLabels[field] && (
+              <DiffFieldLabel>{diffFieldLabels[field]}:</DiffFieldLabel>
+            )}
+            <DiffOld>{diff.old || "(empty)"}</DiffOld>
+            <DiffNew>{diff.new || "(empty)"}</DiffNew>
+          </DiffBlock>
+        );
+      })}
     </ChangedItemBlock>
   );
 }
