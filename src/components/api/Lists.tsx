@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from "react";
-import { AutoSizer, CellMeasurer, CellMeasurerCache, List, ListRowRenderer } from "react-virtualized";
+import { AutoSizer, CellMeasurer, CellMeasurerCache, List } from "react-virtualized";
+import type { ListRowRenderer } from "react-virtualized";
 
 interface Props<T> {
   className?: string;

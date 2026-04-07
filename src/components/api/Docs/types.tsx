@@ -1,6 +1,7 @@
 import * as api from "./api";
 import React, { useMemo, useContext } from "react";
-import { ColoredSyntax, ColoredSyntaxKind, getSyntaxColorFor } from "../ColoredSyntax";
+import { ColoredSyntax, getSyntaxColorFor } from "../ColoredSyntax";
+import type { ColoredSyntaxKind } from "../ColoredSyntax";
 import { assertNever, intersperse } from "../../../utils/types";
 import { DeclarationsContext } from "./DeclarationsContext";
 

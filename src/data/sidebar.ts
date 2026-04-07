@@ -12,11 +12,11 @@ export const sidebar: SidebarItem[] = [
   {
     label: 'Typescript',
     items: [
-      { label: 'Introduction', slug: 'scripting/Typescript/typescript-introduction' },
-      { label: 'Abilities', slug: 'scripting/Typescript/typescript-ability' },
-      { label: 'Modifiers', slug: 'scripting/Typescript/typescript-modifier' },
-      { label: 'Events', slug: 'scripting/Typescript/typescript-events' },
-      { label: 'Tooltip Generator', slug: 'scripting/Typescript/tooltip-generator' },
+      { label: 'Introduction', slug: 'scripting/typescript/typescript-introduction' },
+      { label: 'Abilities', slug: 'scripting/typescript/typescript-ability' },
+      { label: 'Modifiers', slug: 'scripting/typescript/typescript-modifier' },
+      { label: 'Events', slug: 'scripting/typescript/typescript-events' },
+      { label: 'Tooltip Generator', slug: 'scripting/typescript/tooltip-generator' },
     ],
   },
   {
@@ -147,7 +147,7 @@ export const sidebar: SidebarItem[] = [
       { label: 'Useful Console Commands', slug: 'tools/useful-console-commands' },
       { label: 'Setting Up Your Addon with GitHub', slug: 'tools/setting-up-your-addon-with-github' },
       { label: 'Combining KV Files Using #base', slug: 'tools/combining-kv-files-using-base' },
-      { label: 'Improvement vConsole', slug: 'tools/improvement-vConsole' },
+      { label: 'Improvement vConsole', slug: 'tools/improvement-vconsole' },
       { label: 'GitHub Repos and Search', slug: 'tools/github-repos-and-search' },
     ],
   },
