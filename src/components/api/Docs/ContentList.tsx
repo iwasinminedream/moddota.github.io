@@ -95,7 +95,7 @@ export function ContentList() {
 
   return (
     <AvailabilityFiltersContext.Provider value={{ serverEnabled, clientEnabled }}>
-      <main style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", padding: "0 0 0 24px" }}>
+      <main className="api-content-main" style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "0 0 0 24px" }}>
         <SearchBox
           baseUrl={root}
           showAvailabilityFilters={showAvailabilityFilters}

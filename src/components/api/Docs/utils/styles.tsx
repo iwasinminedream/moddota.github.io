@@ -5,6 +5,7 @@ const commonGroupBase: React.CSSProperties = {
   flexFlow: "column",
   backgroundColor: "var(--color-group)",
   border: "1px solid var(--color-group-border)",
+  borderTopColor: "color-mix(in srgb, var(--color-group-border) 80%, white)",
   borderRadius: 4,
   boxShadow: "2px 2px 6px var(--color-group-shadow)",
   padding: 1,
@@ -60,7 +61,7 @@ export const CommonGroupHeader: React.FC<{
   children: React.ReactNode;
 }> = ({ className, style, children }) => (
   <div
-    className={className}
+    className={`api-group-header ${className || ""}`}
     style={{
       display: "flex",
       ...style,

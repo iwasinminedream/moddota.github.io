@@ -56,6 +56,7 @@ export function NavBar() {
             fontWeight: "bold",
             textDecoration: "none",
             color: "var(--color-text)",
+            textShadow: "1px 1px 2px var(--color-navbar-link-shadow)",
             padding: "0 20px",
           }}
         >
@@ -78,6 +79,7 @@ export function NavBar() {
                 fontWeight: 600,
                 textDecoration: "none",
                 color: currentPath.startsWith(link.href) ? "var(--color-highlight)" : "var(--color-text-dim)",
+                textShadow: "1px 1px 2px var(--color-navbar-link-shadow)",
               }}
             >
               {link.label}
@@ -160,6 +162,7 @@ export function NavBar() {
                 fontWeight: 600,
                 textDecoration: "none",
                 color: currentPath.startsWith(link.href) ? "var(--color-highlight)" : "var(--color-text-dim)",
+                textShadow: "1px 1px 2px var(--color-navbar-link-shadow)",
               }}
             >
               {link.label}

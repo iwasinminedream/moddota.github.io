@@ -17,18 +17,44 @@ const base = import.meta.env.BASE_URL;
     <title>{title} - ModDota API</title>
     <base href={base} />
     <link rel="icon" href={`${base}images/favicon.ico`} />
+    <script is:inline>
+      // Theme initialization - must run before body renders to prevent flash
+      (function() {
+        var theme = localStorage.getItem('theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="api-root" style="display:flex;flex-direction:column;height:100%;">
+      <div id="api-loader" style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:16px;">
+        <svg width="48" height="48" viewBox="0 0 48 48" style="animation:spin 1s linear infinite;">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="var(--color-highlight)" stroke-width="4" stroke-dasharray="80 40" stroke-linecap="round" />
+        </svg>
+        <span style="color:var(--color-text-dim);font-size:14px;">Loading...</span>
+      </div>
       <slot />
     </div>
 
-    <script>
-      // Theme initialization
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
+    <style is:inline>
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* Hide loader once React island hydrates */
+      astro-island ~ #api-loader,
+      astro-island + #api-loader { display: none !important; }
+    </style>
+    <script is:inline>
+      // Hide loader when island renders content
+      var observer = new MutationObserver(function() {
+        var root = document.getElementById('api-root');
+        if (root && root.querySelector('nav')) {
+          var loader = document.getElementById('api-loader');
+          if (loader) loader.style.display = 'none';
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('api-root'), { childList: true, subtree: true });
     </script>
   </body>
 </html>

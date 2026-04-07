@@ -127,6 +127,10 @@ a:hover {
   border-radius: 5px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-scrollbar-thumb) 80%, black);
+}
+
 /* Code blocks */
 code {
   font-family: "Fira Code", "Fira Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
@@ -143,4 +147,41 @@ pre {
 
 pre code {
   font-size: 0.85em;
+}
+
+/* ===== API component styles ===== */
+
+/* Group member spacing */
+.group-members > *:not(:last-child) {
+  margin-bottom: 3px;
+}
+
+/* Content area responsive padding */
+@media (max-width: 1100px) {
+  .api-content-main {
+    padding-left: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .api-content-main {
+    padding-left: 0 !important;
+  }
+  .group-members {
+    padding: 8px 4px 8px 8px !important;
+  }
+  .api-group-header {
+    flex-direction: column;
+  }
+}
+
+/* Navbar link hover */
+.nav-desktop-links a:hover,
+.mobile-menu-items a:hover {
+  color: var(--color-highlight) !important;
+}
+
+/* Sidebar link hover */
+.api-sidebar a:hover {
+  background: var(--color-sidebar-hover) !important;
 }
