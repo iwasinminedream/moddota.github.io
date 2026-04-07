@@ -56,7 +56,7 @@ function renderItem(declaration: Declaration, style?: React.CSSProperties) {
   );
 }
 
-export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
+export function ContentList() {
   const { root, declarations } = useContext(DeclarationsContext);
   const showAvailabilityFilters = root === "/vscripts";
 
@@ -97,8 +97,8 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
   const effectiveScope = search ? "" : scope;
   const { data, isSearching } = getFilteredData(declarations, search, effectiveScope, { serverEnabled, clientEnabled });
 
-  // Show placeholder during SSR, or when page has hoist sections and nothing is selected
-  const showPlaceholder = !mounted || (hasHoist && !search && !scope);
+  // Show placeholder during SSR, or when nothing is selected/searched
+  const showPlaceholder = !mounted || (!search && !scope);
 
   return (
     <AvailabilityFiltersContext.Provider value={{ serverEnabled, clientEnabled }}>

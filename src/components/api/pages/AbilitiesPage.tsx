@@ -151,24 +151,23 @@ function CopyButton({ text }: { text: string }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 28,
-        height: 28,
+        width: 20,
+        height: 20,
         background: copied ? "rgba(80, 200, 120, 0.2)" : "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 4,
+        borderRadius: 3,
         cursor: "pointer",
         color: copied ? "#50c878" : "var(--color-text-faded)",
         transition: "all 0.15s ease",
         flexShrink: 0,
-        marginLeft: 8,
       }}
     >
       {copied ? (
-        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width={10} height={10} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="3 8 7 12 13 4" />
         </svg>
       ) : (
-        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width={10} height={10} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="5" y="5" width="9" height="9" rx="1" />
           <path d="M3 11V3a1 1 0 011-1h8" />
         </svg>
@@ -252,9 +251,9 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
           src={iconUrl}
           alt=""
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: isItem ? 3 : 4,
+            width: 24,
+            height: 24,
+            borderRadius: isItem ? 2 : 3,
             flexShrink: 0,
             background: "#0e0e1a",
             objectFit: "cover",
@@ -300,9 +299,9 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
               >
                 Modifiers
               </span>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4 }}>
                 {modifiers.map((m) => (
-                  <span key={m} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  <div key={m} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <code
                       style={{
                         fontSize: 11,
@@ -315,26 +314,8 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
                     >
                       {m}
                     </code>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(m); }}
-                      title="Copy modifier name"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "2px 3px",
-                        fontSize: 10,
-                        opacity: 0.4,
-                        color: "var(--color-text-faded)",
-                        lineHeight: 1,
-                        borderRadius: 2,
-                      }}
-                      onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "1"; }}
-                      onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "0.4"; }}
-                    >
-                      📋
-                    </button>
-                  </span>
+                    <CopyButton text={m} />
+                  </div>
                 ))}
               </div>
             </div>
@@ -442,16 +423,6 @@ function SidebarLink({
     </a>
   );
 }
-
-// --- Category icon map for special categories ---
-
-const CATEGORY_ICONS: Record<string, string> = {
-  items: "\uD83D\uDCE6",
-  talents: "\u2B50",
-  generic: "\u2699\uFE0F",
-  seasonal: "\uD83C\uDF89",
-  other: "\uD83D\uDCC1",
-};
 
 // --- Main Page ---
 
