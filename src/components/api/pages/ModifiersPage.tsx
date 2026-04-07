@@ -15,6 +15,11 @@ const allModifiers = Object.entries(modifiers)
   .flatMap(([category, names]) => names.map((name) => ({ name, category })))
   .sort((a, b) => a.name.localeCompare(b.name));
 
+function getIconUrl(category: string, base: string): string | null {
+  if (category === "other") return null;
+  return `${base}images/heroes/${category}.png`;
+}
+
 function formatCategoryName(name: string): string {
   return name.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
@@ -58,19 +63,27 @@ export function ModifiersPage() {
       <div style={{ display: "flex", flex: 1, minHeight: 0 }} className="api-page-content">
         <div style={{ width: 340, height: "100%", overflowY: "scroll", padding: "2px 12px" }} className="api-sidebar">
           <SidebarLink href={`${base}api/modifiers`} active={!selectedCategory}>All <Badge>{allModifiers.length}</Badge></SidebarLink>
-          {categories.filter((c) => !c.isHero).map((cat, i, arr) => (
-            <React.Fragment key={cat.name}>
-              <SidebarLink href={`${base}api/modifiers?category=${cat.name}`} active={selectedCategory === cat.name}>
+          {categories.filter((c) => !c.isHero).map((cat, i, arr) => {
+            const iconUrl = getIconUrl(cat.name, base);
+            return (
+              <React.Fragment key={cat.name}>
+                <SidebarLink href={`${base}api/modifiers?category=${cat.name}`} active={selectedCategory === cat.name}>
+                  {iconUrl && <HeroIcon src={iconUrl} />}
+                  {formatCategoryName(cat.name)} <Badge>{cat.count}</Badge>
+                </SidebarLink>
+                {i === arr.length - 1 && <div style={{ borderTop: "1px solid var(--color-group-border)", margin: "6px 0" }} />}
+              </React.Fragment>
+            );
+          })}
+          {categories.filter((c) => c.isHero).map((cat) => {
+            const iconUrl = getIconUrl(cat.name, base);
+            return (
+              <SidebarLink key={cat.name} href={`${base}api/modifiers?category=${cat.name}`} active={selectedCategory === cat.name}>
+                {iconUrl && <HeroIcon src={iconUrl} />}
                 {formatCategoryName(cat.name)} <Badge>{cat.count}</Badge>
               </SidebarLink>
-              {i === arr.length - 1 && <div style={{ borderTop: "1px solid var(--color-group-border)", margin: "6px 0" }} />}
-            </React.Fragment>
-          ))}
-          {categories.filter((c) => c.isHero).map((cat) => (
-            <SidebarLink key={cat.name} href={`${base}api/modifiers?category=${cat.name}`} active={selectedCategory === cat.name}>
-              {formatCategoryName(cat.name)} <Badge>{cat.count}</Badge>
-            </SidebarLink>
-          ))}
+            );
+          })}
         </div>
         <main style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", padding: "0 0 0 24px" }}>
           <SearchBox baseUrl="/modifiers" />
@@ -86,6 +99,22 @@ export function ModifiersPage() {
         @media (max-width: 768px) { .api-sidebar { width: 100% !important; max-height: 40vh; border-bottom: 1px solid var(--color-group-border); } .api-page-content { flex-direction: column; } }
       `}</style>
     </>
+  );
+}
+
+function HeroIcon({ src }: { src: string }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      style={{
+        width: 20,
+        height: 20,
+        objectFit: "contain",
+        borderRadius: 2,
+        flexShrink: 0,
+      }}
+    />
   );
 }
 

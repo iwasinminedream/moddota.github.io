@@ -14,6 +14,11 @@ const abilities = abilitiesData as Record<string, KVValue>;
 const heroMap = heroMapData as Record<string, string>;
 const allModifiers: string[] = Object.values(modifiersData as Record<string, string[]>).flat();
 
+function getBaseUrl(): string {
+  if (typeof document === "undefined") return "/";
+  return document.querySelector("base")?.getAttribute("href") || "/";
+}
+
 function findModifiers(abilityName: string): string[] {
   const searchName = abilityName.startsWith("item_") ? abilityName.replace("item_", "") : abilityName;
   return allModifiers.filter((m) => m.includes(`modifier_${searchName}`) || m.includes(`modifier_${abilityName}`));
@@ -25,7 +30,11 @@ function getModifiers(abilityName: string): string[] {
   return modifierCache.get(abilityName)!;
 }
 
-interface AbilityEntry { name: string; category: string; kv: KVObject | string; }
+interface AbilityEntry {
+  name: string;
+  category: string;
+  kv: KVObject | string;
+}
 
 const specialCategories = ["items", "talents", "generic", "seasonal", "other"];
 
@@ -48,11 +57,167 @@ for (const a of allAbilities) categoryMap.set(a.category, (categoryMap.get(a.cat
 
 const categories = Array.from(categoryMap.entries())
   .map(([name, count]) => ({ name, count, isHero: !specialCategories.includes(name) }))
-  .sort((a, b) => { if (a.isHero !== b.isHero) return a.isHero ? 1 : -1; return a.name.localeCompare(b.name); });
+  .sort((a, b) => {
+    if (a.isHero !== b.isHero) return a.isHero ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
 
 function formatCategoryName(name: string): string {
-  return name.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return name
+    .replace(/^npc_dota_hero_/, "")
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
+
+function getAbilityIconUrl(abilityName: string): string {
+  const base = getBaseUrl();
+  if (abilityName.startsWith("item_")) {
+    const itemName = abilityName.replace(/^item_/, "");
+    return `${base}images/items/${itemName}_png.png`;
+  }
+  return `${base}images/spellicons/${abilityName}_png.png`;
+}
+
+function getHeroIconUrl(heroName: string): string {
+  const base = getBaseUrl();
+  return `${base}images/heroes/${heroName}.png`;
+}
+
+// --- KV Table Display ---
+
+function KVValueDisplay({ value, depth }: { value: KVValue; depth: number }) {
+  if (typeof value !== "object" || value === null) {
+    return <span style={{ color: "#98c379" }}>{String(value)}</span>;
+  }
+  return <KVTable obj={value} depth={depth} />;
+}
+
+function KVTable({ obj, depth }: { obj: KVObject; depth: number }) {
+  const [collapsed, setCollapsed] = useState(depth > 1);
+  const entries = Object.entries(obj);
+
+  if (entries.length === 0) {
+    return <span style={{ color: "var(--color-text-faded)" }}>{"{}"}</span>;
+  }
+
+  if (collapsed) {
+    return (
+      <span
+        onClick={() => setCollapsed(false)}
+        style={{ cursor: "pointer", color: "var(--color-highlight)", fontSize: 12, userSelect: "none" }}
+        title="Click to expand"
+      >
+        {"{ ... "}{entries.length}{" keys }"}
+      </span>
+    );
+  }
+
+  return (
+    <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12, fontFamily: "monospace" }}>
+      <tbody>
+        {depth > 0 && (
+          <tr>
+            <td colSpan={2} style={{ paddingBottom: 2 }}>
+              <span
+                onClick={() => setCollapsed(true)}
+                style={{ cursor: "pointer", color: "var(--color-text-faded)", fontSize: 11, userSelect: "none" }}
+                title="Click to collapse"
+              >
+                [-]
+              </span>
+            </td>
+          </tr>
+        )}
+        {entries.map(([key, val]) => {
+          const isNested = typeof val === "object" && val !== null;
+          return (
+            <tr key={key}>
+              <td
+                style={{
+                  padding: "2px 12px 2px 0",
+                  verticalAlign: "top",
+                  whiteSpace: "nowrap",
+                  color: "#e06c75",
+                  fontWeight: 600,
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  paddingLeft: depth * 16,
+                }}
+              >
+                {key}
+              </td>
+              <td
+                style={{
+                  padding: "2px 0",
+                  verticalAlign: "top",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  wordBreak: "break-word",
+                }}
+              >
+                {isNested ? (
+                  <KVValueDisplay value={val} depth={depth + 1} />
+                ) : (
+                  <span style={{ color: "#98c379" }}>{String(val)}</span>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+// --- Copy Button ---
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [text]);
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleCopy();
+      }}
+      title={copied ? "Copied!" : "Copy KV to clipboard"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 28,
+        height: 28,
+        background: copied ? "rgba(80, 200, 120, 0.2)" : "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 4,
+        cursor: "pointer",
+        color: copied ? "#50c878" : "var(--color-text-faded)",
+        transition: "all 0.15s ease",
+        flexShrink: 0,
+        marginLeft: "auto",
+      }}
+    >
+      {copied ? (
+        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 8 7 12 13 4" />
+        </svg>
+      ) : (
+        <svg width={14} height={14} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="5" width="9" height="9" rx="1" />
+          <path d="M3 11V3a1 1 0 011-1h8" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// --- KV to text for clipboard ---
 
 function kvToText(obj: KVValue, indent: number = 0): string {
   const pad = "\t".repeat(indent);
@@ -60,48 +225,247 @@ function kvToText(obj: KVValue, indent: number = 0): string {
   if (typeof obj !== "object" || obj === null) return `"${obj}"`;
   const lines: string[] = ["{"];
   for (const [key, value] of Object.entries(obj)) {
-    if (typeof value === "object" && value !== null) { lines.push(`${pad}\t"${key}"`); lines.push(`${pad}\t${kvToText(value, indent + 1)}`); }
-    else lines.push(`${pad}\t"${key}"\t\t"${value}"`);
+    if (typeof value === "object" && value !== null) {
+      lines.push(`${pad}\t"${key}"`);
+      lines.push(`${pad}\t${kvToText(value, indent + 1)}`);
+    } else {
+      lines.push(`${pad}\t"${key}"\t\t"${value}"`);
+    }
   }
   lines.push(`${pad}}`);
   return lines.join("\n");
 }
 
+// --- Ability Item ---
+
 function AbilityItem({ ability }: { ability: AbilityEntry }) {
   const [expanded, setExpanded] = useState(false);
-  const [copied, setCopied] = useState(false);
   const kv = ability.kv;
+  const isItem = ability.name.startsWith("item_");
 
-  const handleCopy = useCallback(() => {
-    const text = typeof kv === "object" ? `"${ability.name}"\n${kvToText(kv, 0)}` : `"${ability.name}"\t\t"${kv}"`;
-    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); });
-  }, [ability]);
+  const copyText = useMemo(() => {
+    if (typeof kv === "object") return `"${ability.name}"\n${kvToText(kv, 0)}`;
+    return `"${ability.name}"\t\t"${kv}"`;
+  }, [ability.name, kv]);
+
+  const iconUrl = getAbilityIconUrl(ability.name);
+  const modifiers = expanded ? getModifiers(ability.name) : [];
 
   return (
-    <div style={{ display: "flex", flexFlow: "column", backgroundColor: "var(--color-group)", border: "1px solid var(--color-group-border)", borderRadius: 4, boxShadow: "2px 2px 6px var(--color-group-shadow)", padding: "8px 12px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setExpanded(!expanded)}>
-        <span style={{ fontSize: 12, color: "var(--color-text-faded)", flexShrink: 0 }}>{expanded ? "[-]" : "[+]"}</span>
-        <code style={{ fontSize: 15, fontWeight: 700, color: "var(--color-highlight)" }}>{ability.name}</code>
-        <button onClick={(e) => { e.stopPropagation(); handleCopy(); }} title={copied ? "Copied!" : "Copy KV"} style={{ background: "none", border: "none", color: "var(--color-text-faded)", cursor: "pointer", marginLeft: "auto" }}>
-          {copied ? "✓" : "📋"}
-        </button>
+    <div
+      style={{
+        display: "flex",
+        flexFlow: "column",
+        backgroundColor: "#1a1a2e",
+        border: "1px solid var(--color-group-border)",
+        borderRadius: 4,
+        boxShadow: "2px 2px 6px var(--color-group-shadow)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Header */}
+      <div
+        onClick={() => setExpanded(!expanded)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          cursor: "pointer",
+          padding: "8px 12px",
+          userSelect: "none",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            color: "var(--color-text-faded)",
+            flexShrink: 0,
+            width: 16,
+            textAlign: "center",
+            fontFamily: "monospace",
+          }}
+        >
+          {expanded ? "\u25BC" : "\u25B6"}
+        </span>
+
+        <img
+          src={iconUrl}
+          alt=""
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: isItem ? 3 : 4,
+            flexShrink: 0,
+            background: "#0e0e1a",
+            objectFit: "cover",
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+
+        <code
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--color-highlight)",
+            wordBreak: "break-word",
+          }}
+        >
+          {ability.name}
+        </code>
+
+        <CopyButton text={copyText} />
       </div>
 
-      {expanded && (() => { const mods = getModifiers(ability.name); return mods.length > 0 ? (
-        <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--color-group-separator)" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-faded)" }}>Modifiers: </span>
-          {mods.map((m) => <code key={m} style={{ display: "block", fontSize: 11, padding: "1px 6px", margin: "2px 0", borderRadius: 3, background: "var(--color-sidebar)", color: "var(--color-text)" }}>{m}</code>)}
-        </div>
-      ) : null; })()}
+      {/* Expanded content */}
+      {expanded && (
+        <div
+          style={{
+            padding: "0 12px 10px 12px",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          {/* Modifiers */}
+          {modifiers.length > 0 && (
+            <div style={{ marginTop: 8, marginBottom: 8 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--color-text-faded)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Modifiers
+              </span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                {modifiers.map((m) => (
+                  <code
+                    key={m}
+                    style={{
+                      fontSize: 11,
+                      padding: "2px 8px",
+                      borderRadius: 3,
+                      background: "rgba(255,255,255,0.06)",
+                      color: "#abb2bf",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    {m}
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {expanded && typeof kv === "object" && (
-        <pre style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--color-group-separator)", fontSize: 12, fontFamily: "monospace", color: "var(--color-text)", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-          {kvToText(kv, 0)}
-        </pre>
+          {/* KV data */}
+          {typeof kv === "object" && (
+            <div
+              style={{
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 4,
+                background: "rgba(0,0,0,0.25)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                overflowX: "auto",
+              }}
+            >
+              <KVTable obj={kv} depth={0} />
+            </div>
+          )}
+
+          {typeof kv === "string" && (
+            <div
+              style={{
+                marginTop: 6,
+                padding: 10,
+                borderRadius: 4,
+                background: "rgba(0,0,0,0.25)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                fontFamily: "monospace",
+                fontSize: 13,
+                color: "#98c379",
+              }}
+            >
+              {kv}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
 }
+
+// --- Sidebar Link ---
+
+function SidebarLink({
+  href,
+  active,
+  children,
+  icon,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+  icon?: string;
+}) {
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        window.history.pushState({}, "", href);
+        window.dispatchEvent(new Event("popstate"));
+      }}
+      style={{
+        background: active ? "var(--color-sidebar-hover)" : "transparent",
+        borderLeft: active ? "3px solid var(--color-highlight)" : "3px solid transparent",
+        borderRadius: 3,
+        padding: "3px 6px 3px 6px",
+        textDecoration: "none",
+        color: active ? "var(--color-highlight)" : "var(--color-text)",
+        fontWeight: active ? 600 : "normal",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        marginBottom: 1,
+        transition: "background 0.1s ease",
+      }}
+    >
+      {icon && (
+        <img
+          src={icon}
+          alt=""
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 2,
+            flexShrink: 0,
+          }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      )}
+      {children}
+    </a>
+  );
+}
+
+// --- Category icon map for special categories ---
+
+const CATEGORY_ICONS: Record<string, string> = {
+  items: "\uD83D\uDCE6",
+  talents: "\u2B50",
+  generic: "\u2699\uFE0F",
+  seasonal: "\uD83C\uDF89",
+  other: "\uD83D\uDCC1",
+};
+
+// --- Main Page ---
 
 export function AbilitiesPage() {
   const [search, setSearch] = useState(() => getSearchFromUrl());
@@ -125,7 +489,10 @@ export function AbilitiesPage() {
     if (search) {
       const query = search.replace(/\s+/g, "");
       filtered = filtered
-        .map((a) => ({ item: a, score: Math.min(fuzzyMatch(a.name, query), fuzzyMatch(a.category, query)) }))
+        .map((a) => ({
+          item: a,
+          score: Math.min(fuzzyMatch(a.name, query), fuzzyMatch(a.category, query)),
+        }))
         .filter((x) => isFinite(x.score))
         .sort((a, b) => a.score - b.score)
         .map((x) => x.item);
@@ -133,52 +500,165 @@ export function AbilitiesPage() {
     return filtered;
   }, [selectedCategory, search]);
 
-  const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
+  const base = getBaseUrl();
 
   return (
     <>
       <NavBar />
       <div style={{ display: "flex", flex: 1, minHeight: 0 }} className="api-page-content">
-        <div style={{ width: 340, height: "100%", overflowY: "scroll", padding: "2px 12px" }} className="api-sidebar">
-          <SidebarLink href={`${base}api/abilities`} active={!selectedCategory}>All <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--color-text-faded)" }}>{allAbilities.length}</span></SidebarLink>
-          {categories.filter((c) => !c.isHero).map((cat) => (
-            <SidebarLink key={cat.name} href={`${base}api/abilities?category=${cat.name}`} active={selectedCategory === cat.name}>
-              {formatCategoryName(cat.name)} <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--color-text-faded)" }}>{cat.count}</span>
-            </SidebarLink>
-          ))}
-          <div style={{ borderTop: "1px solid var(--color-group-border)", margin: "6px 0" }} />
-          {categories.filter((c) => c.isHero).map((cat) => (
-            <SidebarLink key={cat.name} href={`${base}api/abilities?category=${cat.name}`} active={selectedCategory === cat.name}>
-              {formatCategoryName(cat.name)} <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--color-text-faded)" }}>{cat.count}</span>
-            </SidebarLink>
-          ))}
+        {/* Sidebar */}
+        <div
+          style={{
+            width: 280,
+            height: "100%",
+            overflowY: "auto",
+            padding: "8px 6px",
+            borderRight: "1px solid var(--color-group-border)",
+            background: "var(--color-sidebar)",
+            flexShrink: 0,
+          }}
+          className="api-sidebar"
+        >
+          {/* All */}
+          <SidebarLink
+            href={`${base}api/abilities`}
+            active={!selectedCategory}
+          >
+            <span style={{ flex: 1 }}>All</span>
+            <span style={{ fontSize: 11, color: "var(--color-text-faded)", flexShrink: 0 }}>
+              {allAbilities.length}
+            </span>
+          </SidebarLink>
+
+          {/* Special categories */}
+          {categories
+            .filter((c) => !c.isHero)
+            .map((cat) => (
+              <SidebarLink
+                key={cat.name}
+                href={`${base}api/abilities?category=${cat.name}`}
+                active={selectedCategory === cat.name}
+              >
+                <span style={{ flex: 1 }}>{formatCategoryName(cat.name)}</span>
+                <span style={{ fontSize: 11, color: "var(--color-text-faded)", flexShrink: 0 }}>
+                  {cat.count}
+                </span>
+              </SidebarLink>
+            ))}
+
+          {/* Divider */}
+          <div
+            style={{
+              borderTop: "1px solid var(--color-group-border)",
+              margin: "8px 0",
+            }}
+          />
+
+          {/* Hero categories with icons */}
+          {categories
+            .filter((c) => c.isHero)
+            .map((cat) => (
+              <SidebarLink
+                key={cat.name}
+                href={`${base}api/abilities?category=${cat.name}`}
+                active={selectedCategory === cat.name}
+                icon={getHeroIconUrl(cat.name)}
+              >
+                <span style={{ flex: 1 }}>{formatCategoryName(cat.name)}</span>
+                <span style={{ fontSize: 11, color: "var(--color-text-faded)", flexShrink: 0 }}>
+                  {cat.count}
+                </span>
+              </SidebarLink>
+            ))}
         </div>
-        <main style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", padding: "0 0 0 24px" }}>
-          <SearchBox baseUrl="/abilities" />
+
+        {/* Main content */}
+        <main
+          style={{
+            flex: 1,
+            display: "flex",
+            flexFlow: "column",
+            minHeight: 0,
+            overflowY: "auto",
+            padding: "0 0 0 0",
+          }}
+        >
+          <div style={{ padding: "0 12px" }}>
+            <SearchBox baseUrl="/abilities" />
+          </div>
+
+          {/* Category header when filtered */}
+          {selectedCategory && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "8px 18px",
+                borderBottom: "1px solid var(--color-group-border)",
+              }}
+            >
+              {categories.find((c) => c.name === selectedCategory)?.isHero && (
+                <img
+                  src={getHeroIconUrl(selectedCategory)}
+                  alt=""
+                  style={{ width: 32, height: 32, borderRadius: 3 }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              )}
+              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)" }}>
+                {formatCategoryName(selectedCategory)}
+              </span>
+              <span style={{ fontSize: 13, color: "var(--color-text-faded)" }}>
+                {filteredAbilities.length} abilities
+              </span>
+            </div>
+          )}
+
           {filteredAbilities.length > 0 ? (
-            <ScrollableList data={filteredAbilities} render={(a) => (
-              <div key={a.name} style={{ padding: 6 }}><AbilityItem ability={a} /></div>
-            )} />
+            <ScrollableList
+              data={filteredAbilities}
+              render={(a) => (
+                <div key={a.name} style={{ padding: "4px 12px" }}>
+                  <AbilityItem ability={a} />
+                </div>
+              )}
+            />
           ) : (
-            <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>No abilities found</div>
+            <div
+              style={{
+                marginTop: 80,
+                alignSelf: "center",
+                fontSize: 24,
+                textAlign: "center",
+                color: "var(--color-text-faded)",
+              }}
+            >
+              No abilities found
+            </div>
           )}
         </main>
       </div>
+
       <style>{`
-        @media (max-width: 1100px) { .api-sidebar { width: 200px !important; } }
-        @media (max-width: 768px) { .api-sidebar { width: 100% !important; max-height: 40vh; border-bottom: 1px solid var(--color-group-border); } .api-page-content { flex-direction: column; } }
+        @media (max-width: 1100px) {
+          .api-sidebar { width: 220px !important; }
+        }
+        @media (max-width: 768px) {
+          .api-sidebar {
+            width: 100% !important;
+            max-height: 40vh;
+            border-bottom: 1px solid var(--color-group-border);
+            border-right: none !important;
+          }
+          .api-page-content { flex-direction: column; }
+        }
+        .api-sidebar a:hover {
+          background: var(--color-sidebar-hover) !important;
+        }
       `}</style>
     </>
-  );
-}
-
-function SidebarLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <a href={href} style={{
-      background: active ? "var(--color-sidebar-hover)" : "var(--color-sidebar)",
-      borderBottom: active ? "3px solid var(--color-highlight)" : "3px solid transparent",
-      borderRadius: 3, padding: "2px 4px 0 4px", textDecoration: "none", color: "var(--color-text)",
-      fontWeight: active ? 600 : "normal", display: "flex", alignItems: "center", gap: 4, fontSize: 13, marginBottom: 3,
-    }}>{children}</a>
   );
 }
