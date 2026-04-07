@@ -1,5 +1,6 @@
 const path = require("path");
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const resolve = (query) => path.resolve(__dirname, query);
 
@@ -16,6 +17,19 @@ module.exports = () => ({
                           }),
                       ]),
             ],
+            devServer: {
+                setupMiddlewares: (middlewares, devServer) => {
+                    // Proxy API requests before Docusaurus historyApiFallback kicks in
+                    devServer.app.use(
+                        "/moddota.github.io/api",
+                        createProxyMiddleware({
+                            target: "http://localhost:3001",
+                            changeOrigin: true,
+                        }),
+                    );
+                    return middlewares;
+                },
+            },
         };
     },
 });

@@ -13,14 +13,12 @@ module.exports = {
                 src: "images/logo.svg",
             },
             items: [
-                { position: "left", label: "Lua API", href: "https://iwasinminedream.github.io/moddota.github.io/api/" },
                 {
                     position: "left",
-                    label: "Panorama API",
-                    href: "https://developer.valvesoftware.com/wiki/Dota_2_Workshop_Tools/Panorama/Javascript/API",
+                    type: "html",
+                    value: '<a class="navbar__link navbar__link--api" href="/moddota.github.io/api/">API<svg width="12" height="12" aria-hidden="true" viewBox="0 0 24 24" class="iconExternalLink"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"></path></svg></a>',
                 },
-                { position: "left", label: "New Article", to: "/new-article" },
-                { position: "right", label: "Discord", href: "https://discord.gg/gRmZgvz" },
+                { position: "right", label: "New Article", to: "/new-article" },
             ],
         },
         prism: {

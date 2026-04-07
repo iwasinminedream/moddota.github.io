@@ -37,7 +37,7 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
 
   return {
     output: {
-      publicPath: isProduction ? "/moddota.github.io/api/" : "/",
+      publicPath: "/moddota.github.io/api/",
       filename: isProduction ? "[name].[contenthash].js" : undefined,
       path: path.resolve(__dirname, "dist"),
     },
@@ -100,7 +100,9 @@ export default (env: Record<string, any> = {}, argv: Configuration): Configurati
     devServer: {
       port: 3000,
       hot: true,
-      historyApiFallback: true,
+      historyApiFallback: {
+        index: "/moddota.github.io/api/index.html",
+      },
       static: {
         // Serve changelog files from dota-data
         directory: path.resolve(__dirname, '../../dota-data/files'),

@@ -1,7 +1,8 @@
 {
     "private": true,
     "scripts": {
-        "start": "docusaurus start",
+        "start": "concurrently \"cd api && npx webpack serve --mode development --port 3001\" \"docusaurus start --port 3000\"",
+        "start:docs": "docusaurus start",
         "build": "docusaurus build",
         "lint": "npm run lint:prettier",
         "lint:prettier": "prettier --check .",
@@ -36,6 +37,7 @@
         "@docusaurus/preset-classic": "^2.1.0",
         "@docusaurus/types": "^2.1.0",
         "@types/react": "^17.0.50",
+        "concurrently": "^9.2.1",
         "docusaurus-plugin-sass": "^0.2.2",
         "fork-ts-checker-webpack-plugin": "^5.2.1",
         "prettier": "^2.8.8",
