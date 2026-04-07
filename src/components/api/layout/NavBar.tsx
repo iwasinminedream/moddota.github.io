@@ -14,8 +14,12 @@ export function NavBar() {
   const toggleTheme = () => {
     const newDark = !darkmode;
     setDarkmode(newDark);
-    localStorage.setItem("theme", newDark ? "dark" : "");
-    document.documentElement.setAttribute("data-theme", newDark ? "dark" : "");
+    localStorage.setItem("theme", newDark ? "dark" : "light");
+    if (newDark) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
   };
 
   const base = typeof window !== "undefined"

@@ -160,7 +160,7 @@ function CopyButton({ text }: { text: string }) {
         color: copied ? "#50c878" : "var(--color-text-faded)",
         transition: "all 0.15s ease",
         flexShrink: 0,
-        marginLeft: "auto",
+        marginLeft: 8,
       }}
     >
       {copied ? (
@@ -361,8 +361,11 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
                 ))}
                 {abilityValues.map(([key, value]) => (
                   <div key={key} style={{ marginTop: 4 }}>
-                    <div style={{ color: "var(--color-text-faded)", fontWeight: 500, fontFamily: "monospace", fontSize: 12, marginBottom: 2 }}>
-                      {key}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                      <span style={{ color: "var(--color-text-faded)", fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>
+                        {key}
+                      </span>
+                      <CopyButton text={kvToText(value, 0)} />
                     </div>
                     <pre style={{ margin: 0, fontFamily: "monospace", fontSize: 12, color: "var(--color-text)", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
                       {kvToText(value, 0)}
@@ -406,20 +409,18 @@ function SidebarLink({
         window.dispatchEvent(new Event("popstate"));
       }}
       style={{
-        background: active ? "var(--color-sidebar-hover)" : "transparent",
-        borderLeft: active ? "3px solid var(--color-highlight)" : "3px solid transparent",
+        background: active ? "var(--color-sidebar-hover)" : "var(--color-sidebar)",
+        borderBottom: active ? "3px solid var(--color-highlight)" : "3px solid transparent",
         borderRadius: 3,
-        padding: "3px 6px 3px 6px",
+        padding: "2px 4px 0 4px",
         textDecoration: "none",
-        color: active ? "var(--color-highlight)" : "var(--color-text)",
+        color: "var(--color-text)",
         fontWeight: active ? 600 : "normal",
         display: "flex",
         alignItems: "center",
         gap: 6,
         fontSize: 13,
-        marginBottom: 2,
-        borderBottom: "1px solid var(--color-group-border)",
-        transition: "background 0.1s ease",
+        marginBottom: 3,
       }}
     >
       {icon && (
@@ -496,12 +497,10 @@ export function AbilitiesPage() {
         {/* Sidebar */}
         <div
           style={{
-            width: 280,
+            width: 340,
             height: "100%",
-            overflowY: "auto",
-            padding: "8px 6px",
-            borderRight: "1px solid var(--color-group-border)",
-            background: "var(--color-sidebar)",
+            overflowY: "scroll",
+            padding: "2px 12px",
             flexShrink: 0,
           }}
           className="api-sidebar"
@@ -561,13 +560,14 @@ export function AbilitiesPage() {
 
         {/* Main content */}
         <main
+          className="api-content-main"
           style={{
             flex: 1,
             display: "flex",
             flexFlow: "column",
             minHeight: 0,
             overflowY: "auto",
-            padding: "0 0 0 0",
+            padding: "0 0 0 24px",
           }}
         >
           <div style={{ padding: "0 12px" }}>
@@ -604,7 +604,13 @@ export function AbilitiesPage() {
             </div>
           )}
 
-          {filteredAbilities.length > 0 ? (
+          {!search && !selectedCategory ? (
+            <>
+              <div style={{ marginTop: 50, alignSelf: "center", fontSize: 24, textAlign: "center", color: "var(--color-text-faded)" }}>
+                Use the search bar or select a category from the sidebar
+              </div>
+            </>
+          ) : filteredAbilities.length > 0 ? (
             <ScrollableList
               data={filteredAbilities}
               render={(a) => (
@@ -614,16 +620,8 @@ export function AbilitiesPage() {
               )}
             />
           ) : (
-            <div
-              style={{
-                marginTop: 80,
-                alignSelf: "center",
-                fontSize: 24,
-                textAlign: "center",
-                color: "var(--color-text-faded)",
-              }}
-            >
-              No abilities found
+            <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>
+              No results found
             </div>
           )}
         </main>
@@ -631,19 +629,15 @@ export function AbilitiesPage() {
 
       <style>{`
         @media (max-width: 1100px) {
-          .api-sidebar { width: 220px !important; }
+          .api-sidebar { width: 200px !important; }
         }
         @media (max-width: 768px) {
           .api-sidebar {
             width: 100% !important;
             max-height: 40vh;
             border-bottom: 1px solid var(--color-group-border);
-            border-right: none !important;
           }
           .api-page-content { flex-direction: column; }
-        }
-        .api-sidebar a:hover {
-          background: var(--color-sidebar-hover) !important;
         }
         .kv-row:hover {
           background: var(--color-sidebar);

@@ -24,7 +24,7 @@ const currentPath = Astro.url.pathname;
     <script is:inline>
       (function() {
         var theme = localStorage.getItem('theme');
-        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        if (theme === 'dark' || (theme !== 'light' && !theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
       })();
@@ -41,7 +41,9 @@ const currentPath = Astro.url.pathname;
           <a href={`${base}api/vscripts`}>API</a>
           <a href={`${base}new-article`}>New Article</a>
         </div>
-        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle dark mode">🌞</button>
+        <button id="theme-toggle" class="theme-toggle-pill" aria-label="Toggle dark mode">
+          <span class="theme-toggle-knob"></span>
+        </button>
         <button class="burger-btn" id="article-burger" aria-label="Toggle menu">☰</button>
       </div>
       <div class="mobile-menu" id="article-mobile-menu" style="display:none;">
@@ -80,18 +82,27 @@ const currentPath = Astro.url.pathname;
 
       // Theme toggle
       const themeBtn = document.getElementById('theme-toggle');
-      function updateThemeBtn() {
+      var knob = themeBtn?.querySelector('.theme-toggle-knob');
+      function updateThemePill() {
         var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (themeBtn) themeBtn.textContent = isDark ? '🌜' : '🌞';
+        if (themeBtn) themeBtn.style.background = isDark ? '#101010' : '#c0c0c0';
+        if (knob) {
+          knob.style.left = isDark ? '26px' : '2px';
+          knob.style.background = isDark ? '#606060' : '#ffffff';
+          knob.textContent = isDark ? '\uD83C\uDF1C' : '\uD83C\uDF1E';
+        }
       }
-      updateThemeBtn();
+      updateThemePill();
       themeBtn?.addEventListener('click', function() {
         var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        var newTheme = isDark ? '' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme || '');
-        if (!newTheme) document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', newTheme);
-        updateThemeBtn();
+        if (isDark) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+        updateThemePill();
       });
     </script>
 
@@ -105,17 +116,31 @@ const currentPath = Astro.url.pathname;
         z-index: 100;
       }
 
-      .theme-toggle-btn {
-        background: none;
+      .theme-toggle-pill {
+        background: #c0c0c0;
         border: none;
-        font-size: 20px;
+        border-radius: 12px;
+        width: 48px;
+        height: 24px;
         cursor: pointer;
-        padding: 4px 8px;
-        border-radius: 4px;
+        position: relative;
+        transition: background 0.2s;
         margin-left: 8px;
+        flex-shrink: 0;
       }
-      .theme-toggle-btn:hover {
-        background: var(--color-sidebar-hover, #f0f0f0);
+      .theme-toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: left 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
       }
 
       .article-navbar-inner {

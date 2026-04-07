@@ -86,10 +86,16 @@ export function ConvarsPage() {
         </div>
         <main style={{ flex: 1, display: "flex", flexFlow: "column", minHeight: 0, overflowY: "auto", padding: "0 0 0 24px" }}>
           <SearchBox baseUrl="/convars" />
-          {filtered.length > 0 ? (
+          {!search && selectedFlag === "all" ? (
+            <>
+              <div style={{ marginTop: 50, alignSelf: "center", fontSize: 24, textAlign: "center", color: "var(--color-text-faded)" }}>
+                Use the search bar or select a filter from the sidebar
+              </div>
+            </>
+          ) : filtered.length > 0 ? (
             isSearching ? <LazyList data={filtered} render={renderItem} /> : <ScrollableList data={filtered} render={renderItem} />
           ) : (
-            <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>No convars found</div>
+            <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>No results found</div>
           )}
         </main>
       </div>

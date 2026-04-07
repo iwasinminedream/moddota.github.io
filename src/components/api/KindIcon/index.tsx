@@ -27,7 +27,8 @@ export const KindIcon: React.FC<{
   className?: string;
   kind: IconKind;
   size: "small" | "medium" | "big";
-}> = React.memo(({ className, kind, size }) => {
+  style?: React.CSSProperties;
+}> = React.memo(({ className, kind, size, style }) => {
   const s = size === "small" ? 16 : size === "medium" ? 20 : 24;
   return (
     <span
@@ -37,6 +38,7 @@ export const KindIcon: React.FC<{
         width: s,
         height: s,
         verticalAlign: kind === "interface" ? "middle" : "baseline",
+        ...style,
       }}
       dangerouslySetInnerHTML={{ __html: iconSvgMap[kind] }}
     />

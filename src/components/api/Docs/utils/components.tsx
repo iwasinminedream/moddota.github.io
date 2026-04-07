@@ -17,7 +17,7 @@ export const KindIcon: React.FC<{
   className?: string;
   kind: React.ComponentProps<typeof UnstyledKindIcon>["kind"];
   size: React.ComponentProps<typeof UnstyledKindIcon>["size"];
-}> = (props) => <UnstyledKindIcon {...props} style={{ marginBottom: -4, marginRight: 4 } as any} />;
+}> = (props) => <UnstyledKindIcon {...props} style={{ marginBottom: -4, marginRight: 4 }} />;
 
 const searchWrapperStyle: React.CSSProperties = {
   display: "block",
