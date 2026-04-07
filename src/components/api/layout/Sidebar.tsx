@@ -11,6 +11,7 @@ export type HoistType = {
 };
 
 function getBase(): string {
+  if (typeof document === "undefined") return "/moddota.github.io/";
   return document.querySelector("base")?.getAttribute("href") || "/";
 }
 

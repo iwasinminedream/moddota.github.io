@@ -1,13 +1,8 @@
 ---
 import ApiLayout from '../../layouts/ApiLayout.astro';
-import { DeclarationsPage } from '../../components/api/DeclarationsPage';
-import { scopes } from '../../data/api-data';
+import { EventsPage } from '../../components/api/pages/EventsPage';
 ---
 
 <ApiLayout title="Game Events">
-  <DeclarationsPage
-    client:only="react"
-    context={scopes.vscriptsEvents}
-    hoist={[]}
-  />
+  <EventsPage client:load />
 </ApiLayout>

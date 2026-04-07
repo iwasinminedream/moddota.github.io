@@ -1,16 +1,8 @@
 ---
 import ApiLayout from '../../layouts/ApiLayout.astro';
-import { DeclarationsPage } from '../../components/api/DeclarationsPage';
-import { scopes } from '../../data/api-data';
+import { VScriptsPage } from '../../components/api/pages/VScriptsPage';
 ---
 
 <ApiLayout title="Lua API">
-  <DeclarationsPage
-    client:only="react"
-    context={scopes.vscripts}
-    hoist={[
-      { label: "Functions", icon: "function", scope: "functions" },
-      { label: "Constants", icon: "constant", scope: "constants" },
-    ]}
-  />
+  <VScriptsPage client:load />
 </ApiLayout>

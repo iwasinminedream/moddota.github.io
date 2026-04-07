@@ -1,13 +1,8 @@
 ---
 import ApiLayout from '../../../layouts/ApiLayout.astro';
-import { DeclarationsPage } from '../../../components/api/DeclarationsPage';
-import { scopes } from '../../../data/api-data';
+import { PanoramaCssPage } from '../../../components/api/pages/PanoramaCssPage';
 ---
 
 <ApiLayout title="Panorama CSS">
-  <DeclarationsPage
-    client:only="react"
-    context={scopes.panoramaCss}
-    hoist={[]}
-  />
+  <PanoramaCssPage client:load />
 </ApiLayout>

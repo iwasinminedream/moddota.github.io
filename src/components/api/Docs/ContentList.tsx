@@ -1,5 +1,4 @@
 import React, { useContext, useState, useCallback, useEffect } from "react";
-import { Author } from "../Author";
 import { LazyList, ScrollableList } from "../Lists";
 import { getFilteredData } from "./utils/filtering";
 import { ClassDeclaration } from "./ClassDeclaration";
@@ -12,6 +11,7 @@ import { DeclarationsContext } from "./DeclarationsContext";
 import { AvailabilityFiltersContext, SearchBox, getSearchFromUrl } from "../Search";
 
 function getBase(): string {
+  if (typeof document === "undefined") return "/moddota.github.io/";
   return document.querySelector("base")?.getAttribute("href") || "/";
 }
 
@@ -19,6 +19,7 @@ function getBase(): string {
  *  e.g. for path /moddota.github.io/api/vscripts/CDOTA_BaseNPC and root=/vscripts
  *  returns "CDOTA_BaseNPC". For the base path returns "". */
 function getScopeFromUrl(root: string): string {
+  if (typeof window === "undefined") return "";
   const path = window.location.pathname;
   const base = getBase();
   // Expected path pattern: {base}api{root}/{scope}
@@ -59,6 +60,7 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
   const { root, declarations } = useContext(DeclarationsContext);
   const showAvailabilityFilters = root === "/vscripts";
 
+  const [mounted, setMounted] = useState(false);
   const [serverEnabled, setServerEnabled] = useState(true);
   const [clientEnabled, setClientEnabled] = useState(true);
   const [search, setSearch] = useState(() => getSearchFromUrl());
@@ -66,6 +68,8 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
     if (typeof window === "undefined") return "";
     return getScopeFromUrl(root);
   });
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handler = () => {
@@ -93,8 +97,8 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
   const effectiveScope = search ? "" : scope;
   const { data, isSearching } = getFilteredData(declarations, search, effectiveScope, { serverEnabled, clientEnabled });
 
-  // Show placeholder only when page has hoist sections and nothing is selected
-  const showPlaceholder = hasHoist && !search && !scope;
+  // Show placeholder during SSR, or when page has hoist sections and nothing is selected
+  const showPlaceholder = !mounted || (hasHoist && !search && !scope);
 
   return (
     <AvailabilityFiltersContext.Provider value={{ serverEnabled, clientEnabled }}>
@@ -109,8 +113,8 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
         />
 
         {showPlaceholder ? (
-          <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>
-            Choose a category or use the search bar...
+          <div style={{ marginTop: 50, alignSelf: "center", fontSize: 24, textAlign: "center", color: "var(--color-text-faded)" }}>
+            Use the search bar or select a category from the sidebar
           </div>
         ) : data.length > 0 ? (
           isSearching ? (
@@ -122,7 +126,7 @@ export function ContentList({ hasHoist = true }: { hasHoist?: boolean }) {
           <div style={{ marginTop: 50, alignSelf: "center", fontSize: 42, textAlign: "center" }}>No results found</div>
         ) : null}
 
-        {showPlaceholder && <Author />}
+        {}
       </main>
     </AvailabilityFiltersContext.Provider>
   );
