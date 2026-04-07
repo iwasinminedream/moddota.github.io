@@ -1,0 +1,14 @@
+---
+import ApiLayout from '../../../layouts/ApiLayout.astro';
+import { ChangelogPage } from '../../../components/api/pages/ChangelogPage';
+
+export function getStaticPaths() {
+  // Dynamic version pages are handled client-side by the ChangelogPage component
+  // We just need a catch-all for the route
+  return [{ params: { version: 'latest' } }];
+}
+---
+
+<ApiLayout title="Changelog">
+  <ChangelogPage client:only="react" />
+</ApiLayout>

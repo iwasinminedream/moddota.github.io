@@ -1,0 +1,24 @@
+---
+import { getCollection, render } from 'astro:content';
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+
+const articles = await getCollection('articles');
+const homeArticle = articles.find((a) => a.id === 'index');
+let Content;
+if (homeArticle) {
+  const rendered = await render(homeArticle);
+  Content = rendered.Content;
+}
+---
+
+<ArticleLayout title="ModDota - Dota 2 Modding">
+  {Content ? (
+    <Content />
+  ) : (
+    <div>
+      <h2>Welcome to ModDota</h2>
+      <p>Your guide to Dota 2 custom game development.</p>
+      <p>Choose a topic from the sidebar to get started, or visit the <a href={`${import.meta.env.BASE_URL}api/vscripts`}>API Documentation</a>.</p>
+    </div>
+  )}
+</ArticleLayout>

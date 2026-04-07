@@ -1,0 +1,254 @@
+---
+import '../styles/global.css';
+import ArticleSidebar from '../components/articles/ArticleSidebar.astro';
+
+interface Props {
+  title: string;
+  author?: string;
+  steamId?: string;
+  date?: Date;
+}
+
+const { title, author, steamId, date } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} - ModDota</title>
+    <link rel="icon" href={`${base}images/favicon.ico`} />
+  </head>
+  <body>
+    <nav class="article-navbar">
+      <div class="article-navbar-inner">
+        <a href={base} class="brand-link">
+          <img src={`${base}images/logo.svg`} alt="ModDota" width="36" height="32" />
+          <span>ModDota</span>
+        </a>
+        <div class="nav-links">
+          <a href={`${base}api/vscripts`}>API</a>
+          <a href={`${base}new-article`}>New Article</a>
+        </div>
+        <button class="burger-btn" id="article-burger" aria-label="Toggle menu">☰</button>
+      </div>
+      <div class="mobile-menu" id="article-mobile-menu" style="display:none;">
+        <a href={base}>Home</a>
+        <a href={`${base}api/vscripts`}>API</a>
+        <a href={`${base}new-article`}>New Article</a>
+      </div>
+    </nav>
+
+    <div class="article-layout">
+      <aside class="article-sidebar" id="article-sidebar">
+        <ArticleSidebar currentPath={currentPath} />
+      </aside>
+      <main class="article-content">
+        <article class="article-body">
+          <h1>{title}</h1>
+          {author && (
+            <div class="article-meta">
+              By <strong>{author}</strong>
+              {date && <span> &middot; {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>}
+            </div>
+          )}
+          <slot />
+        </article>
+      </main>
+    </div>
+
+    <script>
+      const burger = document.getElementById('article-burger');
+      const mobileMenu = document.getElementById('article-mobile-menu');
+      burger?.addEventListener('click', () => {
+        const open = mobileMenu?.style.display !== 'none';
+        if (mobileMenu) mobileMenu.style.display = open ? 'none' : 'flex';
+        if (burger) burger.textContent = open ? '☰' : '✕';
+      });
+
+      // Theme init
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    </script>
+
+    <style>
+      .article-navbar {
+        background-color: var(--color-navbar);
+        border-bottom: 1px solid var(--color-border);
+        box-shadow: 0 0 4px var(--color-navbar-shadow);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .article-navbar-inner {
+        display: flex;
+        align-items: center;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        height: 56px;
+      }
+
+      .brand-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        color: var(--color-text);
+        text-decoration: none;
+      }
+
+      .brand-link img {
+        height: 32px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 1rem;
+        margin-left: auto;
+      }
+
+      .nav-links a {
+        padding: 8px 16px;
+        font-weight: 600;
+        color: var(--color-text-dim);
+      }
+
+      .nav-links a:hover {
+        color: var(--color-highlight);
+        text-decoration: none;
+      }
+
+      .burger-btn {
+        display: none;
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: var(--color-text);
+        margin-left: auto;
+        padding: 8px;
+      }
+
+      .mobile-menu {
+        flex-direction: column;
+        border-top: 1px solid var(--color-border);
+        padding: 8px 0;
+      }
+
+      .mobile-menu a {
+        padding: 10px 20px;
+        color: var(--color-text);
+        font-weight: 600;
+      }
+
+      @media (max-width: 768px) {
+        .nav-links {
+          display: none;
+        }
+        .burger-btn {
+          display: block;
+        }
+      }
+
+      .article-layout {
+        display: flex;
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: calc(100vh - 56px);
+      }
+
+      .article-sidebar {
+        width: 280px;
+        padding: 1rem;
+        border-right: 1px solid var(--color-border);
+        overflow-y: auto;
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        flex-shrink: 0;
+      }
+
+      .article-content {
+        flex: 1;
+        min-width: 0;
+        padding: 1.5rem 2rem;
+      }
+
+      .article-body {
+        max-width: 800px;
+      }
+
+      .article-body h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.5rem;
+      }
+
+      .article-meta {
+        color: var(--color-text-dim);
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+      }
+
+      .article-body :global(h2) {
+        font-size: 1.5rem;
+        margin-top: 2rem;
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: 0.3rem;
+      }
+
+      .article-body :global(h3) {
+        font-size: 1.25rem;
+        margin-top: 1.5rem;
+      }
+
+      .article-body :global(img) {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .article-body :global(table) {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 1rem 0;
+      }
+
+      .article-body :global(th),
+      .article-body :global(td) {
+        border: 1px solid var(--color-border);
+        padding: 8px 12px;
+        text-align: left;
+      }
+
+      .article-body :global(th) {
+        background: var(--color-sidebar);
+        font-weight: 600;
+      }
+
+      .article-body :global(blockquote) {
+        border-left: 4px solid var(--color-highlight);
+        margin: 1rem 0;
+        padding: 0.5rem 1rem;
+        color: var(--color-text-dim);
+        background: var(--color-sidebar);
+      }
+
+      @media (max-width: 768px) {
+        .article-sidebar {
+          display: none;
+        }
+        .article-content {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </body>
+</html>

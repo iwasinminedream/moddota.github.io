@@ -1,0 +1,8 @@
+---
+import ApiLayout from '../../layouts/ApiLayout.astro';
+import { ModifiersPage } from '../../components/api/pages/ModifiersPage';
+---
+
+<ApiLayout title="Modifiers">
+  <ModifiersPage client:only="react" />
+</ApiLayout>

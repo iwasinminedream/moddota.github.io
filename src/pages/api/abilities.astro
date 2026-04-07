@@ -1,0 +1,8 @@
+---
+import ApiLayout from '../../layouts/ApiLayout.astro';
+import { AbilitiesPage } from '../../components/api/pages/AbilitiesPage';
+---
+
+<ApiLayout title="Abilities">
+  <AbilitiesPage client:only="react" />
+</ApiLayout>

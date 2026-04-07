@@ -1,0 +1,184 @@
+---
+import { sidebar, type SidebarItem } from '../../data/sidebar';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+const base = import.meta.env.BASE_URL;
+
+function getHref(item: SidebarItem): string | undefined {
+  if (item.href) return item.href;
+  if (item.slug) return `${base}${item.slug}`;
+  return undefined;
+}
+
+function isActive(item: SidebarItem): boolean {
+  if (!item.slug) return false;
+  const itemPath = `${base}${item.slug}`;
+  const normalizedCurrent = currentPath.replace(/\/$/, '');
+  const normalizedItem = itemPath.replace(/\/$/, '');
+  return normalizedCurrent === normalizedItem;
+}
+
+function hasActiveChild(item: SidebarItem): boolean {
+  if (isActive(item)) return true;
+  if (item.items) return item.items.some(child => hasActiveChild(child));
+  return false;
+}
+---
+
+<nav class="sidebar-nav">
+  {sidebar.map((item) => (
+    item.items ? (
+      <div class="sidebar-category">
+        <div class:list={["sidebar-category-label", { expanded: hasActiveChild(item) }]}>
+          {item.label}
+        </div>
+        <div class:list={["sidebar-children", { collapsed: !hasActiveChild(item) }]}>
+          {item.items.map((child) => (
+            child.items ? (
+              <div class="sidebar-subcategory">
+                <div class:list={["sidebar-category-label sub", { expanded: hasActiveChild(child) }]}>
+                  {child.label}
+                </div>
+                <div class:list={["sidebar-children", { collapsed: !hasActiveChild(child) }]}>
+                  {child.items.map((subChild) => {
+                    const href = getHref(subChild);
+                    return href ? (
+                      <a
+                        href={href}
+                        class:list={["sidebar-link", { active: isActive(subChild) }]}
+                        target={subChild.href ? '_blank' : undefined}
+                        rel={subChild.href ? 'noopener noreferrer' : undefined}
+                      >
+                        {subChild.label}
+                        {subChild.href && <span class="external-icon">↗</span>}
+                      </a>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            ) : (
+              (() => {
+                const href = getHref(child);
+                return href ? (
+                  <a
+                    href={href}
+                    class:list={["sidebar-link", { active: isActive(child) }]}
+                    target={child.href ? '_blank' : undefined}
+                    rel={child.href ? 'noopener noreferrer' : undefined}
+                  >
+                    {child.label}
+                    {child.href && <span class="external-icon">↗</span>}
+                  </a>
+                ) : null;
+              })()
+            )
+          ))}
+        </div>
+      </div>
+    ) : (
+      (() => {
+        const href = getHref(item);
+        return href ? (
+          <a
+            href={href}
+            class:list={["sidebar-link top-level", { active: isActive(item) }]}
+          >
+            {item.label}
+          </a>
+        ) : null;
+      })()
+    )
+  ))}
+</nav>
+
+<script>
+  document.querySelectorAll('.sidebar-category-label').forEach((label) => {
+    label.addEventListener('click', () => {
+      label.classList.toggle('expanded');
+      const children = label.nextElementSibling;
+      if (children) children.classList.toggle('collapsed');
+    });
+  });
+</script>
+
+<style>
+  .sidebar-nav {
+    font-size: 0.875rem;
+  }
+
+  .sidebar-link {
+    display: block;
+    padding: 4px 12px;
+    color: var(--color-text);
+    border-radius: 4px;
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .sidebar-link:hover {
+    background: var(--color-sidebar-hover);
+    text-decoration: none;
+  }
+
+  .sidebar-link.active {
+    color: var(--color-highlight);
+    font-weight: 600;
+    background: var(--color-sidebar-hover);
+  }
+
+  .sidebar-link.top-level {
+    padding: 6px 12px;
+    font-weight: 500;
+  }
+
+  .sidebar-category {
+    margin-bottom: 4px;
+  }
+
+  .sidebar-category-label {
+    padding: 6px 12px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    color: var(--color-text);
+    border-radius: 4px;
+  }
+
+  .sidebar-category-label:hover {
+    background: var(--color-sidebar-hover);
+  }
+
+  .sidebar-category-label::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 6px;
+    transition: transform 0.2s;
+  }
+
+  .sidebar-category-label.expanded::before {
+    transform: rotate(90deg);
+  }
+
+  .sidebar-category-label.sub {
+    font-size: 0.85rem;
+    padding-left: 20px;
+  }
+
+  .sidebar-children {
+    padding-left: 8px;
+  }
+
+  .sidebar-children.collapsed {
+    display: none;
+  }
+
+  .external-icon {
+    font-size: 0.75rem;
+    margin-left: 4px;
+    opacity: 0.5;
+  }
+</style>

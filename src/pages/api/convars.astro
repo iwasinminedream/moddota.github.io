@@ -1,0 +1,8 @@
+---
+import ApiLayout from '../../layouts/ApiLayout.astro';
+import { ConvarsPage } from '../../components/api/pages/ConvarsPage';
+---
+
+<ApiLayout title="Convars">
+  <ConvarsPage client:only="react" />
+</ApiLayout>

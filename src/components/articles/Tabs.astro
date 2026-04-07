@@ -1,0 +1,56 @@
+---
+interface Props {
+  groupId?: string;
+}
+---
+
+<div class="tabs-container" data-group={Astro.props.groupId}>
+  <slot />
+</div>
+
+<style>
+  .tabs-container {
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .tabs-container :global(.tab-item) {
+    display: none;
+  }
+
+  .tabs-container :global(.tab-item.active) {
+    display: block;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.tabs-container').forEach((container) => {
+    const items = container.querySelectorAll(':scope > .tab-item');
+    if (items.length === 0) return;
+
+    const nav = document.createElement('div');
+    nav.className = 'tabs-nav';
+    nav.style.cssText = 'display:flex;border-bottom:1px solid var(--color-border);background:var(--color-sidebar)';
+
+    items.forEach((item, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = item.getAttribute('data-label') || `Tab ${i + 1}`;
+      btn.style.cssText = 'padding:8px 16px;border:none;background:transparent;cursor:pointer;font-weight:600;color:var(--color-text)';
+      btn.addEventListener('click', () => {
+        items.forEach((it) => it.classList.remove('active'));
+        nav.querySelectorAll('button').forEach((b) => (b.style.borderBottom = 'none'));
+        item.classList.add('active');
+        btn.style.borderBottom = '2px solid var(--color-highlight)';
+      });
+      if (i === 0) {
+        item.classList.add('active');
+        btn.style.borderBottom = '2px solid var(--color-highlight)';
+      }
+      nav.appendChild(btn);
+    });
+
+    container.insertBefore(nav, container.firstChild);
+  });
+</script>

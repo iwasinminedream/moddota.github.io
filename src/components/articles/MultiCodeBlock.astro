@@ -1,0 +1,65 @@
+---
+interface Props {
+  group?: string;
+  titles?: string;
+}
+---
+
+<div class="tabs-container multi-code-block">
+  <slot />
+</div>
+
+<script>
+  document.querySelectorAll('.multi-code-block').forEach((container) => {
+    const blocks = container.querySelectorAll(':scope > pre, :scope > div > pre');
+    if (blocks.length <= 1) return;
+
+    const wrapper = document.createElement('div');
+    const nav = document.createElement('div');
+    nav.className = 'tabs-nav';
+    nav.style.cssText = 'display:flex;border-bottom:1px solid var(--color-border);background:var(--color-sidebar)';
+
+    blocks.forEach((block, i) => {
+      const code = block.querySelector('code');
+      const lang = code?.className?.match(/language-(\w+)/)?.[1] || `Tab ${i + 1}`;
+      const langNames: Record<string, string> = { lua: 'Lua', ts: 'TypeScript', tsx: 'TypeScript', js: 'JavaScript', jsx: 'JavaScript', css: 'CSS' };
+      const label = langNames[lang] || lang;
+
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.style.cssText = 'padding:8px 16px;border:none;background:transparent;cursor:pointer;font-weight:600;color:var(--color-text)';
+
+      btn.addEventListener('click', () => {
+        blocks.forEach((b) => ((b as HTMLElement).style.display = 'none'));
+        nav.querySelectorAll('button').forEach((b) => (b.style.borderBottom = 'none'));
+        (block as HTMLElement).style.display = 'block';
+        btn.style.borderBottom = '2px solid var(--color-highlight)';
+      });
+
+      if (i === 0) {
+        btn.style.borderBottom = '2px solid var(--color-highlight)';
+      } else {
+        (block as HTMLElement).style.display = 'none';
+      }
+
+      nav.appendChild(btn);
+    });
+
+    container.insertBefore(nav, container.firstChild);
+  });
+</script>
+
+<style>
+  .multi-code-block {
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .multi-code-block :global(pre) {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
+</style>

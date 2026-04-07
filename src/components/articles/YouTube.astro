@@ -1,0 +1,20 @@
+---
+interface Props {
+  id?: string;
+  playlistId?: string;
+  aspectRatio?: number;
+}
+
+const { id, playlistId, aspectRatio = 16 / 9 } = Astro.props;
+const src = playlistId
+  ? `https://www.youtube.com/embed/videoseries?list=${playlistId}`
+  : `https://www.youtube.com/embed/${id}`;
+---
+
+<div style={`position: relative; padding-bottom: ${100 / aspectRatio}%; height: 0; overflow: hidden; margin-bottom: 1rem;`}>
+  <iframe
+    src={src}
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+    allowfullscreen
+  ></iframe>
+</div>
