@@ -3,12 +3,14 @@ import React, { useState, useEffect } from "react";
 export function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkmode, setDarkmode] = useState(false);
+  const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
     const theme = localStorage.getItem("theme");
     setDarkmode(
       theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches),
     );
+    setCurrentPath(window.location.pathname);
   }, []);
 
   const toggleTheme = () => {
@@ -37,8 +39,6 @@ export function NavBar() {
     { href: `${base}api/convars`, label: "Convars" },
     { href: `${base}api/changelog`, label: "Changelog" },
   ];
-
-  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
   return (
     <nav
