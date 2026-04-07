@@ -114,6 +114,8 @@ export const SidebarWrapper = styled.div`
   }
 
   @media (max-width: 768px) {
-    display: none;
+    width: 100%;
+    max-height: 40vh;
+    border-bottom: 1px solid ${(props) => props.theme.groupBorder};
   }
 `;

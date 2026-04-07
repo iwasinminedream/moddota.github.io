@@ -13,7 +13,7 @@ module.exports = {
                 src: "images/logo.svg",
             },
             items: [
-                { position: "left", label: "API", href: "pathname:///moddota.github.io/api/" },
+                { position: "left", label: "API", href: "pathname:///moddota.github.io/api/", target: "_self" },
                 { position: "right", label: "New Article", to: "/new-article" },
             ],
         },

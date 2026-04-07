@@ -6,26 +6,49 @@ import { NavLink } from "react-router-dom";
 import { AppContext } from "~components/AppContext";
 import ModDotaLogo from "~components/ModDota.svg";
 
-export const NavBar = () => (
-  <NavBarWrapper>
-    <HomeBrandLink href="/">
-      <ModDotaLogo height="32" width="36" />
-      <span>ModDota</span>
-    </HomeBrandLink>
-    <NavBarLink to="/vscripts">Lua API</NavBarLink>
-    <NavBarLink to="/events">Game Events</NavBarLink>
-    <NavBarLink to="/panorama/api">Panorama API</NavBarLink>
-    <NavBarLink to="/panorama/css">Panorama CSS</NavBarLink>
-    <NavBarLink to="/panorama/events">Panorama Events</NavBarLink>
-    <NavBarLink to="/abilities">Abilities</NavBarLink>
-    <NavBarLink to="/modifiers">Modifiers</NavBarLink>
-    <NavBarLink to="/convars">Convars</NavBarLink>
-    <NavBarLink to="/changelog">Changelog</NavBarLink>
-    <NavBarRight>
-      <NavBarThemeSwitcher />
-    </NavBarRight>
-  </NavBarWrapper>
-);
+export const NavBar = () => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  return (
+    <NavBarWrapper>
+      <NavBarTop>
+        <HomeBrandLink href="/">
+          <ModDotaLogo height="32" width="36" />
+          <span>ModDota</span>
+        </HomeBrandLink>
+        <NavBarLinks>
+          <NavBarLink to="/vscripts">Lua API</NavBarLink>
+          <NavBarLink to="/events">Game Events</NavBarLink>
+          <NavBarLink to="/panorama/api">Panorama API</NavBarLink>
+          <NavBarLink to="/panorama/css">Panorama CSS</NavBarLink>
+          <NavBarLink to="/panorama/events">Panorama Events</NavBarLink>
+          <NavBarLink to="/abilities">Abilities</NavBarLink>
+          <NavBarLink to="/modifiers">Modifiers</NavBarLink>
+          <NavBarLink to="/convars">Convars</NavBarLink>
+          <NavBarLink to="/changelog">Changelog</NavBarLink>
+        </NavBarLinks>
+        <NavBarRight>
+          <NavBarThemeSwitcher />
+          <BurgerButton onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            {menuOpen ? "✕" : "☰"}
+          </BurgerButton>
+        </NavBarRight>
+      </NavBarTop>
+      {menuOpen && (
+        <MobileMenu onClick={() => setMenuOpen(false)}>
+          <NavBarLink to="/vscripts">Lua API</NavBarLink>
+          <NavBarLink to="/events">Game Events</NavBarLink>
+          <NavBarLink to="/panorama/api">Panorama API</NavBarLink>
+          <NavBarLink to="/panorama/css">Panorama CSS</NavBarLink>
+          <NavBarLink to="/panorama/events">Panorama Events</NavBarLink>
+          <NavBarLink to="/abilities">Abilities</NavBarLink>
+          <NavBarLink to="/modifiers">Modifiers</NavBarLink>
+          <NavBarLink to="/convars">Convars</NavBarLink>
+          <NavBarLink to="/changelog">Changelog</NavBarLink>
+        </MobileMenu>
+      )}
+    </NavBarWrapper>
+  );
+};
 
 const HomeBrandLink = styled.a`
   display: flex;
@@ -52,10 +75,24 @@ const HomeBrandLink = styled.a`
 
 const NavBarWrapper = styled.nav`
   display: flex;
+  flex-direction: column;
   background-color: ${(props) => props.theme.navbar};
   border-bottom: 1px solid ${(props) => props.theme.navbarShadow};
   box-shadow: 0 0 4px ${(props) => props.theme.navbarShadow};
   margin-bottom: 8px;
+`;
+
+const NavBarTop = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const NavBarLinks = styled.div`
+  display: flex;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const NavBarRight = styled.div`
@@ -64,6 +101,32 @@ const NavBarRight = styled.div`
   justify-content: flex-end;
   align-items: center;
   padding-right: 12px;
+`;
+
+const BurgerButton = styled.button`
+  display: none;
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 8px;
+  color: ${(props) => props.theme.text};
+  margin-left: 8px;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+`;
+
+const MobileMenu = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  border-top: 1px solid ${(props) => props.theme.navbarShadow};
+
+  @media (min-width: 769px) {
+    display: none;
+  }
 `;
 
 const NavBarLink = styled(NavLink)`

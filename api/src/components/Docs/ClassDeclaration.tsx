@@ -25,6 +25,10 @@ const ClassHeader = styled(CommonGroupHeader)`
 const ClassName = styled.span`
   font-size: 24px;
   font-weight: 600;
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+  }
 `;
 
 const ClassExtendsWrapper = styled.span`

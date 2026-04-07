@@ -33,6 +33,10 @@ export const CommonGroupMembers = styled.div`
   > :not(:last-child) {
     margin-bottom: 3px;
   }
+
+  @media (max-width: 768px) {
+    padding: 8px 4px 8px 8px;
+  }
 `;
 
 export const CommonGroupHeader = styled.div`

@@ -20,6 +20,10 @@ const PageContent = styled.div`
   display: flex;
   flex: 1;
   min-height: 0;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 function App() {

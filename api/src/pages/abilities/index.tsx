@@ -199,6 +199,10 @@ const KVKey = styled.span`
   font-weight: 500;
   font-family: monospace;
   font-size: 12px;
+
+  @media (max-width: 768px) {
+    min-width: 120px;
+  }
 `;
 
 const KVVal = styled.span`
