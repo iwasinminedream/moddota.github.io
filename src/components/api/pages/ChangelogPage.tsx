@@ -269,6 +269,7 @@ const kvStyles = {
   blockHeader: { fontWeight: 600, color: "#8b5cf6", fontSize: 12, marginBottom: 1 } as React.CSSProperties,
   fieldRow: { margin: "1px 0", padding: "1px 6px", fontFamily: "monospace", fontSize: 12 } as React.CSSProperties,
   fieldName: { color: "#60a5fa", fontWeight: 500 } as React.CSSProperties,
+  subFieldName: { color: "var(--color-text-faded, #999)" } as React.CSSProperties,
   oldValue: { color: "#ef4444", textDecoration: "line-through", marginRight: 4 } as React.CSSProperties,
   newValue: { color: "#10b981", fontWeight: 500 } as React.CSSProperties,
   unchanged: { color: "var(--color-text-dim, #888)" } as React.CSSProperties,
@@ -291,7 +292,7 @@ function renderKvLeaf(key: string, old: unknown, newVal: unknown): React.ReactNo
   const changed = oldStr !== newStr;
   return (
     <div key={key} style={kvStyles.fieldRow}>
-      <span style={kvStyles.fieldName}>"{key}": </span>
+      <span style={kvStyles.subFieldName}>"{key}": </span>
       {changed ? (
         <>
           <span style={kvStyles.oldValue}>{oldStr || '""'}</span>

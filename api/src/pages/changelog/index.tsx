@@ -446,6 +446,10 @@ const KvFieldName = styled.span`
   font-weight: 500;
 `;
 
+const KvSubFieldName = styled.span`
+  color: ${(props) => props.theme.textFaded};
+`;
+
 const KvOldValue = styled.span`
   color: #ef4444;
   text-decoration: line-through;
@@ -719,7 +723,7 @@ function renderKvLeaf(key: string, old: unknown, newVal: unknown): React.ReactNo
 
   return (
     <KvFieldRow key={key}>
-      <KvFieldName>"{key}": </KvFieldName>
+      <KvSubFieldName>"{key}": </KvSubFieldName>
       {changed ? (
         <>
           <KvOldValue>{oldStr || '""'}</KvOldValue>
