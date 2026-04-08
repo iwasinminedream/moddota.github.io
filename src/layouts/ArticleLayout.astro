@@ -48,9 +48,14 @@ const currentPath = Astro.url.pathname;
         <button class="burger-btn" id="article-burger" aria-label="Toggle menu">☰</button>
       </div>
       <div class="mobile-menu" id="article-mobile-menu" style="display:none;">
-        <a href={base}>Home</a>
-        <a href={`${base}api/vscripts`}>API</a>
-        <a href={`${base}new-article`}>New Article</a>
+        <div class="mobile-menu-links">
+          <a href={base}>Home</a>
+          <a href={`${base}api/vscripts`}>API</a>
+          <a href={`${base}new-article`}>New Article</a>
+        </div>
+        <div class="mobile-sidebar">
+          <ArticleSidebar currentPath={currentPath} />
+        </div>
       </div>
     </nav>
 
@@ -63,7 +68,7 @@ const currentPath = Astro.url.pathname;
           <h1>{title}</h1>
           {outdated && (
             <div class="outdated-banner">
-              This article is outdated. The information here may no longer be accurate or relevant to the current version of Dota 2 modding tools.
+              This article is outdated. The information here may no longer be accurate or relevant.
             </div>
           )}
           {author && (
@@ -202,13 +207,26 @@ const currentPath = Astro.url.pathname;
       .mobile-menu {
         flex-direction: column;
         border-top: 1px solid var(--color-border);
+        padding: 0;
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+      }
+
+      .mobile-menu-links {
+        display: flex;
+        flex-direction: column;
+        border-bottom: 1px solid var(--color-border);
         padding: 8px 0;
       }
 
-      .mobile-menu a {
+      .mobile-menu-links a {
         padding: 10px 20px;
         color: var(--color-text);
         font-weight: 600;
+      }
+
+      .mobile-sidebar {
+        padding: 8px 12px 16px;
       }
 
       @media (max-width: 768px) {
