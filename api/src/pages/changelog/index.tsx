@@ -23,18 +23,14 @@ interface ChangeItem {
   returns?: string;
 }
 
-interface ChangedItemDiff {
-  old: string;
-  new: string;
-}
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ChangedItem {
   type?: string;
   name?: string;
   class?: string;
   enum?: string;
   category?: string;
-  changes: Record<string, ChangedItemDiff>;
+  changes: Record<string, any>;
 }
 
 interface CategoryChanges {
@@ -425,10 +421,48 @@ const KvPropertyName = styled.span`
   color: #7c3aed;
 `;
 
-const KvPropKey = styled.span`
+const KvBlock = styled.div`
+  margin: 2px 0 2px 16px;
+  font-family: monospace;
+  font-size: 12px;
+`;
+
+const KvBlockHeader = styled.div`
   font-weight: 600;
   color: ${(props) => props.theme.textFaded};
   font-size: 12px;
+  margin-bottom: 1px;
+`;
+
+const KvFieldRow = styled.div`
+  margin: 1px 0;
+  padding: 1px 6px;
+  font-family: monospace;
+  font-size: 12px;
+`;
+
+const KvFieldName = styled.span`
+  color: ${(props) => props.theme.textFaded};
+`;
+
+const KvOldValue = styled.span`
+  color: #ef4444;
+  text-decoration: line-through;
+  margin-right: 4px;
+`;
+
+const KvNewValue = styled.span`
+  color: #10b981;
+  font-weight: 500;
+`;
+
+const KvUnchangedValue = styled.span`
+  color: ${(props) => props.theme.textDim};
+`;
+
+const KvArrow = styled.span`
+  color: ${(props) => props.theme.textFaded};
+  margin: 0 4px;
 `;
 
 // Version header
@@ -525,80 +559,10 @@ const NoChanges = styled.div`
 const diffFieldLabels: Record<string, string> = {
   returns: "Returns",
   value: "Value",
-  fieldsDetail: "Fields",
   description: "Description",
   signature: "Signature",
 };
 
-/** Parse a fieldsDetail string (Key=Value, Key2=Value2) into a map. */
-function parseFieldsDetail(s: string): Record<string, string> {
-  const result: Record<string, string> = {};
-  if (!s) return result;
-  // Split by ", " followed by uppercase letter (KV property names are PascalCase)
-  for (const part of s.split(/, (?=[A-Z])/)) {
-    const eq = part.indexOf("=");
-    if (eq > 0) {
-      result[part.slice(0, eq)] = part.slice(eq + 1);
-    }
-  }
-  return result;
-}
-
-interface FieldDiff {
-  key: string;
-  old?: string;
-  new?: string;
-  subDiffs?: { key: string; old?: string; new?: string }[];
-}
-
-/** Try to parse a string as JSON object, return null if not an object. */
-function tryParseJsonObject(s: string): Record<string, unknown> | null {
-  if (!s || s[0] !== "{") return null;
-  try {
-    const parsed = JSON.parse(s);
-    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) return parsed;
-  } catch { /* not JSON */ }
-  return null;
-}
-
-/** Stringify a value for display: flatten simple objects to "value", show others as JSON. */
-function formatSubValue(v: unknown): string {
-  if (v === null || v === undefined) return "";
-  if (typeof v !== "object") return String(v);
-  return JSON.stringify(v);
-}
-
-/** Compute per-property diffs from two fieldsDetail strings, with sub-diffs for JSON values. */
-function diffFieldsDetail(oldStr: string, newStr: string): FieldDiff[] {
-  const oldMap = parseFieldsDetail(oldStr);
-  const newMap = parseFieldsDetail(newStr);
-  const allKeys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
-  const diffs: FieldDiff[] = [];
-  for (const key of allKeys) {
-    if (oldMap[key] !== newMap[key]) {
-      // Try to parse both as JSON objects for sub-diffing
-      const oldObj = tryParseJsonObject(oldMap[key]);
-      const newObj = tryParseJsonObject(newMap[key]);
-      if (oldObj && newObj) {
-        const subKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
-        const subDiffs: { key: string; old?: string; new?: string }[] = [];
-        for (const sk of subKeys) {
-          const ov = formatSubValue(oldObj[sk]);
-          const nv = formatSubValue(newObj[sk]);
-          if (ov !== nv) {
-            subDiffs.push({ key: sk, old: ov || undefined, new: nv || undefined });
-          }
-        }
-        if (subDiffs.length > 0) {
-          diffs.push({ key, subDiffs });
-        }
-      } else {
-        diffs.push({ key, old: oldMap[key], new: newMap[key] });
-      }
-    }
-  }
-  return diffs;
-}
 
 /** Determine group key for an added/removed item. */
 function getGroupKey(item: { type?: string; class?: string; enum?: string; category?: string }): string {
@@ -733,50 +697,113 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
   return <ItemName>{item.name || JSON.stringify(item)}</ItemName>;
 }
 
+/** Check if a value is a leaf diff { old, new }. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isLeafDiff(v: any): v is { old: unknown; new: unknown } {
+  return typeof v === "object" && v !== null && "old" in v && "new" in v;
+}
+
+/** Format a value for KV display. */
+function formatKvValue(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+/** Render a KV leaf diff: "key": old => new, or just old => new for value changes. */
+function renderKvLeaf(key: string, old: unknown, newVal: unknown): React.ReactNode {
+  const oldStr = formatKvValue(old);
+  const newStr = formatKvValue(newVal);
+  const changed = oldStr !== newStr;
+
+  return (
+    <KvFieldRow key={key}>
+      <KvFieldName>"{key}": </KvFieldName>
+      {changed ? (
+        <>
+          <KvOldValue>{oldStr || '""'}</KvOldValue>
+          <KvArrow>→</KvArrow>
+          <KvNewValue>{newStr || '""'}</KvNewValue>
+        </>
+      ) : (
+        <KvUnchangedValue>{oldStr}</KvUnchangedValue>
+      )}
+    </KvFieldRow>
+  );
+}
+
+/** Recursively render KV-style changes. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renderKvChanges(changes: Record<string, any>): React.ReactNode {
+  return Object.entries(changes).map(([key, value]) => {
+    if (isLeafDiff(value)) {
+      // Simple property: "key": old → new
+      const oldStr = formatKvValue(value.old);
+      const newStr = formatKvValue(value.new);
+      return (
+        <KvFieldRow key={key}>
+          <KvFieldName>"{key}": </KvFieldName>
+          <KvOldValue>{oldStr || '""'}</KvOldValue>
+          <KvArrow>→</KvArrow>
+          <KvNewValue>{newStr || '""'}</KvNewValue>
+        </KvFieldRow>
+      );
+    }
+    // Nested object (e.g. AbilityValues sub-entry): show block with all fields
+    const entries = Object.entries(value);
+    const allLeaves = entries.every(([, v]) => isLeafDiff(v));
+
+    if (allLeaves) {
+      // All children are leaf diffs — render as a KV block with all fields
+      return (
+        <KvBlock key={key}>
+          <KvBlockHeader>{key}</KvBlockHeader>
+          {entries.map(([subKey, subVal]: [string, any]) =>
+            renderKvLeaf(subKey, subVal.old, subVal.new),
+          )}
+        </KvBlock>
+      );
+    }
+
+    // Mixed nested (e.g. AbilityValues containing both object and simple sub-entries)
+    return (
+      <KvBlock key={key}>
+        <KvBlockHeader>{key}</KvBlockHeader>
+        {renderKvChanges(value)}
+      </KvBlock>
+    );
+  });
+}
+
 function renderChangedItem(item: ChangedItem): React.ReactNode {
   const isAbilityOrUnit = item.type === "ability" || item.type === "unit";
   const NameComponent = item.type === "ability" ? AbilityName : item.type === "unit" ? UnitName : ItemSignature;
+
+  if (isAbilityOrUnit) {
+    return (
+      <ChangedItemBlock>
+        <ChangedItemName>
+          <NameComponent>{item.name}</NameComponent>
+        </ChangedItemName>
+        {renderKvChanges(item.changes)}
+      </ChangedItemBlock>
+    );
+  }
 
   return (
     <ChangedItemBlock>
       <ChangedItemName>
         <NameComponent>{item.name}</NameComponent>
       </ChangedItemName>
-      {Object.entries(item.changes).map(([field, diff]) => {
-        // For abilities/units, parse fieldsDetail into per-property diffs
-        if (isAbilityOrUnit && field === "fieldsDetail") {
-          const propDiffs = diffFieldsDetail(diff.old, diff.new);
-          if (propDiffs.length === 0) return null;
-          return propDiffs.map((pd) => (
-            <DiffBlock key={pd.key}>
-              <KvPropKey>{pd.key}:</KvPropKey>
-              {pd.subDiffs ? (
-                pd.subDiffs.map((sd) => (
-                  <div key={sd.key} style={{ marginLeft: 8, marginBottom: 2 }}>
-                    <KvPropKey>{sd.key}:</KvPropKey>
-                    {sd.old !== undefined && <DiffOld>{sd.old}</DiffOld>}
-                    {sd.new !== undefined && <DiffNew>{sd.new}</DiffNew>}
-                  </div>
-                ))
-              ) : (
-                <>
-                  {pd.old !== undefined && <DiffOld>{pd.old}</DiffOld>}
-                  {pd.new !== undefined && <DiffNew>{pd.new}</DiffNew>}
-                </>
-              )}
-            </DiffBlock>
-          ));
-        }
-        return (
-          <DiffBlock key={field}>
-            {diffFieldLabels[field] && (
-              <DiffFieldLabel>{diffFieldLabels[field]}:</DiffFieldLabel>
-            )}
-            <DiffOld>{diff.old || "(empty)"}</DiffOld>
-            <DiffNew>{diff.new || "(empty)"}</DiffNew>
-          </DiffBlock>
-        );
-      })}
+      {Object.entries(item.changes).map(([field, diff]) => (
+        <DiffBlock key={field}>
+          {diffFieldLabels[field] && (
+            <DiffFieldLabel>{diffFieldLabels[field]}:</DiffFieldLabel>
+          )}
+          <DiffOld>{diff.old || "(empty)"}</DiffOld>
+          <DiffNew>{diff.new || "(empty)"}</DiffNew>
+        </DiffBlock>
+      ))}
     </ChangedItemBlock>
   );
 }
