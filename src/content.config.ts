@@ -7,6 +7,7 @@ const articles = defineCollection({
     title: z.string(),
     author: z.string().optional(),
     steamId: z.union([z.string(), z.number()]).transform(String).optional(),
+    outdated: z.boolean().optional(),
     date: z.string().optional().transform((val) => {
       if (!val) return undefined;
       // Handle DD.MM.YYYY format
