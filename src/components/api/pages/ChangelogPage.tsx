@@ -266,9 +266,9 @@ function formatKvValue(v: unknown): string {
 
 const kvStyles = {
   block: { margin: "2px 0 2px 16px", fontFamily: "monospace", fontSize: 12 } as React.CSSProperties,
-  blockHeader: { fontWeight: 600, color: "var(--color-text-faded, #999)", fontSize: 12, marginBottom: 1 } as React.CSSProperties,
+  blockHeader: { fontWeight: 600, color: "#8b5cf6", fontSize: 12, marginBottom: 1 } as React.CSSProperties,
   fieldRow: { margin: "1px 0", padding: "1px 6px", fontFamily: "monospace", fontSize: 12 } as React.CSSProperties,
-  fieldName: { color: "var(--color-text-faded, #999)" } as React.CSSProperties,
+  fieldName: { color: "#60a5fa", fontWeight: 500 } as React.CSSProperties,
   oldValue: { color: "#ef4444", textDecoration: "line-through", marginRight: 4 } as React.CSSProperties,
   newValue: { color: "#10b981", fontWeight: 500 } as React.CSSProperties,
   unchanged: { color: "var(--color-text-dim, #888)" } as React.CSSProperties,

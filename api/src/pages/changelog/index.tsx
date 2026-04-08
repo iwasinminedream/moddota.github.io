@@ -429,7 +429,7 @@ const KvBlock = styled.div`
 
 const KvBlockHeader = styled.div`
   font-weight: 600;
-  color: ${(props) => props.theme.textFaded};
+  color: #8b5cf6;
   font-size: 12px;
   margin-bottom: 1px;
 `;
@@ -442,7 +442,8 @@ const KvFieldRow = styled.div`
 `;
 
 const KvFieldName = styled.span`
-  color: ${(props) => props.theme.textFaded};
+  color: #60a5fa;
+  font-weight: 500;
 `;
 
 const KvOldValue = styled.span`
