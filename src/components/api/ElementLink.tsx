@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 
 export function HashScrollHandler() {
   const didScroll = useRef(false);
@@ -38,9 +38,20 @@ export function ElementLink({ root, scope, hash }: { root: string; scope: string
   const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
   const urlHash = hash ? `#${hash}` : "";
   const href = `${base}api${root}/${scope}${urlHash}`;
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      window.history.pushState({}, "", href);
+      window.dispatchEvent(new Event("popstate"));
+    },
+    [href],
+  );
+
   return (
     <a
       href={href}
+      onClick={handleClick}
       title="Link"
       style={{
         marginRight: 2,

@@ -2,7 +2,7 @@ import * as api from "./api";
 import React from "react";
 import { Field } from "./Field";
 import { FunctionDeclaration } from "./FunctionDeclaration";
-import { ElementLink, KindIcon } from "./utils/components";
+import { ElementLink, KindIcon, useLinkedElement } from "./utils/components";
 import { CommonGroupWrapper, CommonGroupHeader, CommonGroupSignature, CommonGroupMembers, ElementBadges, OptionalDescription } from "./utils/styles";
 import { Types } from "./types";
 import { AvailabilityBadge } from "./AvailabilityBadge";
@@ -12,8 +12,10 @@ export const ClassDeclaration: React.FC<{
   className?: string;
   style?: React.CSSProperties;
   declaration: api.ClassDeclaration;
-}> = ({ className, style, declaration }) => (
-  <CommonGroupWrapper className={className} style={style}>
+}> = ({ className, style, declaration }) => {
+  const isLinked = useLinkedElement({ scope: declaration.name });
+  return (
+  <CommonGroupWrapper className={className} style={style} id={declaration.name} isLinked={isLinked}>
     <CommonGroupHeader style={{ padding: 5 }}>
       <CommonGroupSignature>
         <KindIcon kind="class" size="big" />
@@ -28,7 +30,7 @@ export const ClassDeclaration: React.FC<{
       <ElementBadges>
         <ReferencesLink name={declaration.name} />
         <AvailabilityBadge available={declaration.clientName != null ? "both" : "server"} />
-        <ElementLink scope={declaration.name} />
+        <ElementLink scope={declaration.name} hash={declaration.name} />
       </ElementBadges>
     </CommonGroupHeader>
     <OptionalDescription description={declaration.description} />
@@ -46,4 +48,5 @@ export const ClassDeclaration: React.FC<{
       </CommonGroupMembers>
     )}
   </CommonGroupWrapper>
-);
+  );
+};

@@ -1,7 +1,7 @@
 import * as api from "./api";
 import React from "react";
 import { ColoredSyntax } from "../ColoredSyntax";
-import { ElementLink, KindIcon } from "./utils/components";
+import { ElementLink, KindIcon, useLinkedElement } from "./utils/components";
 import { CommonGroupWrapper, CommonGroupHeader, CommonGroupSignature, CommonGroupMembers, ElementBadges, OptionalDescription } from "./utils/styles";
 import { ReferencesLink } from "./ReferencesLink";
 
@@ -28,8 +28,10 @@ export const Enum: React.FC<{
   className?: string;
   style?: React.CSSProperties;
   element: api.Enum;
-}> = ({ className, style, element }) => (
-  <CommonGroupWrapper className={className} style={style}>
+}> = ({ className, style, element }) => {
+  const isLinked = useLinkedElement({ scope: element.name });
+  return (
+  <CommonGroupWrapper className={className} style={style} id={element.name} isLinked={isLinked}>
     <CommonGroupHeader style={{ padding: 5 }}>
       <CommonGroupSignature>
         <KindIcon kind="enum" size="big" />
@@ -37,7 +39,7 @@ export const Enum: React.FC<{
       </CommonGroupSignature>
       <ElementBadges>
         <ReferencesLink name={element.name} />
-        <ElementLink scope={element.name} />
+        <ElementLink scope={element.name} hash={element.name} />
       </ElementBadges>
     </CommonGroupHeader>
     <OptionalDescription description={element.description} />
@@ -51,4 +53,5 @@ export const Enum: React.FC<{
       </CommonGroupMembers>
     )}
   </CommonGroupWrapper>
-);
+  );
+};
