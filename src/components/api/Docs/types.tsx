@@ -1,5 +1,5 @@
 import * as api from "./api";
-import React, { useMemo, useContext } from "react";
+import React, { useMemo, useContext, useCallback } from "react";
 import { ColoredSyntax, getSyntaxColorFor } from "../ColoredSyntax";
 import type { ColoredSyntaxKind } from "../ColoredSyntax";
 import { assertNever, intersperse } from "../../../utils/types";
@@ -53,10 +53,21 @@ const ReferenceType: React.FC<{ name: string }> = ({ name }) => {
 
   const urlHash = hash ? `#${hash}` : "";
   const style: React.CSSProperties = { textDecorationColor: getSyntaxColorFor(kind) };
+  const { root } = useContext(DeclarationsContext);
   const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
+  const href = `${base}api${root}/${scope}${urlHash}`;
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      window.history.pushState({}, "", href);
+      window.dispatchEvent(new Event("popstate"));
+    },
+    [href],
+  );
 
   return scope ? (
-    <a href={`${base}api/vscripts/${scope}${urlHash}`} style={{ fontWeight: 600, ...style }}>
+    <a href={href} onClick={handleClick} style={{ fontWeight: 600, ...style }}>
       <ColoredSyntax kind={kind}>{name}</ColoredSyntax>
     </a>
   ) : (
