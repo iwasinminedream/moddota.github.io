@@ -12,5 +12,5 @@
     "allowJs": true
   },
   "include": ["src/**/*", "astro.config.mjs"],
-  "exclude": ["node_modules", "dist", "api", "docusaurus"]
+  "exclude": ["node_modules", "dist"]
 }

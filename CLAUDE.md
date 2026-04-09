@@ -1,21 +1,20 @@
-# ModDota Site & API – Copilot Instructions
+# ModDota Site – Copilot Instructions
 
 ## Quick Start (Read This First)
 
-**Architecture in one sentence**: An Astro 5 static site with React islands – articles rendered as Astro content collections, API reference pages powered by interactive React components loaded via `client:only="react"`, all consuming `@moddota/dota-data`.
+**Architecture in one sentence**: An Astro 5 static site that mixes Markdown/MDX articles (Astro content collections) with interactive API reference pages powered by React islands, all consuming `@moddota/dota-data`.
 
 **Essential dev commands**:
-- `npm run dev` – Astro dev server with HMR
-- `npm run build` – full production build → `dist/`
-- `npm run preview` – preview the built site locally
-- `npm run lint` – Prettier check
-- `npm run fix:prettier` – Prettier auto-fix
+- `npm run dev` – Astro dev server with HMR (port 4321)
+- `npm run build` – prebuild (copies dota-data) → `astro build` → `dist/`
+- `npm run preview` – serve `dist/` locally
+- `npm run lint` / `npm run fix:prettier` – Prettier check / fix
 
 **Critical conventions**:
 - **Path aliases**: `~components/` → `src/components/api/`, `~data/` → `src/data/` (configured in both `astro.config.mjs` and `tsconfig.json`)
-- **Theming**: CSS custom properties (`--color-*`) in `src/styles/global.css`, toggled via `data-theme="dark"` attribute on `<html>` – never hardcode colors
-- **Data source**: All API data comes from `@moddota/dota-data`; prebuild script copies `files/` and `lib/` from sibling `dota-data` directory
-- **React islands**: API interactive components use `client:only="react"` – they render only in the browser, not during SSG
+- **Theming**: CSS custom properties (`--color-*`) in `src/styles/global.css`, toggled via `data-theme="dark"` attribute on `<html>`, persisted in `localStorage`. Never hardcode colors.
+- **Data source**: All API data comes from `@moddota/dota-data`; the `prebuild` script copies `files/` and `lib/` from a sibling `dota-data/` directory into `node_modules/@moddota/dota-data/`
+- **React islands**: API interactive components use `client:load` – they hydrate immediately on page load
 - **Routing**: Astro file-based routing, clean URLs (no hash router)
 
 ---
@@ -24,122 +23,117 @@
 
 ### Single Astro Application
 
-The site is a unified Astro 5 project with two main sections:
+```
+Astro 5 (output: 'static')
+├── Markdown articles → src/content/articles/ → ArticleLayout.astro → [...slug].astro
+└── API browser pages → src/pages/api/*.astro → ApiLayout.astro → React islands (client:load)
+                                                                  ↑
+                                                  imports scope from src/data/<x>-data.ts
+                                                                  ↑
+                                                  imports raw data from @moddota/dota-data
+```
 
-1. **Articles** – Astro content collections (`src/content/articles/`) rendered via `ArticleLayout.astro`
-   - Content schema: `src/content.config.ts` (Zod: title, author, steamId, date)
-   - Sidebar: `src/data/sidebar.ts` (static tree structure)
-   - Dynamic routing: `src/pages/[...slug].astro`
-
-2. **API Reference** – Astro pages wrapping React islands
-   - Layout: `src/layouts/ApiLayout.astro`
-   - Pages: `src/pages/api/*.astro` (vscripts, events, convars, modifiers, abilities, panorama/*)
-   - React components: `src/components/api/` (loaded via `client:only="react"`)
-   - Data loading: `src/data/api-data.ts` (transforms `@moddota/dota-data` into scopes)
+The site is **fully pre-rendered** (no server runtime). React components only run client-side after hydration.
 
 ### Folder Structure
 
 ```
 moddota.github.io-1/
-├── astro.config.mjs            # Astro config: React, MDX, Tailwind, Vite aliases
-├── tsconfig.json               # Extends astro/tsconfigs/strict, path aliases
-├── package.json                # Scripts, dependencies, Prettier config
+├── astro.config.mjs            # Integrations: react, mdx, @tailwindcss/vite; Vite path aliases; remark plugins
+├── tsconfig.json               # Extends astro/tsconfigs/strict; path aliases
+├── package.json                # Scripts; prebuild copies dota-data
+├── public/                     # Static assets served as-is
+│   ├── images/
+│   │   ├── heroes/             # Hero portraits (133 files)
+│   │   ├── items/              # Item icons (601 files)
+│   │   ├── spellicons/         # Ability icons (1421 files)
+│   │   └── logo.svg, favicon.ico
+│   └── videos/
 ├── src/
-│   ├── content.config.ts       # Astro content collections schema (Zod)
+│   ├── content.config.ts       # Astro content collection schema (Zod)
+│   ├── content/articles/       # Markdown/MDX articles (the only collection)
 │   ├── layouts/
-│   │   ├── ApiLayout.astro     # API pages shell: theme init, loading spinner
-│   │   └── ArticleLayout.astro # Article pages: navbar, sidebar, content area
-│   ├── pages/
-│   │   ├── index.astro         # Homepage
-│   │   ├── [...slug].astro     # Dynamic article routing
-│   │   ├── new-article.astro   # Article editor page
+│   │   ├── ArticleLayout.astro # Article shell: navbar, sidebar, content area
+│   │   └── ApiLayout.astro     # API shell: theme init, loading spinner placeholder
+│   ├── pages/                  # File-based routing
+│   │   ├── index.astro         # Homepage (renders articles/index.md if present)
+│   │   ├── [...slug].astro     # Dynamic article routing (getStaticPaths)
+│   │   ├── new-article.astro   # Article editor page (ArticleEditor React island)
 │   │   └── api/
-│   │       ├── index.astro     # API index/redirect
+│   │       ├── index.astro     # API hub
 │   │       ├── vscripts.astro  # Lua API
-│   │       ├── events.astro    # Game Events
-│   │       ├── convars.astro   # Console Variables
+│   │       ├── events.astro    # Game events
+│   │       ├── convars.astro   # Console variables
 │   │       ├── modifiers.astro # Modifiers
 │   │       ├── abilities.astro # Abilities
-│   │       ├── changelog/
-│   │       │   ├── index.astro
-│   │       │   └── [version].astro
-│   │       └── panorama/
-│   │           ├── api.astro   # Panorama JS API
-│   │           ├── css.astro   # Panorama CSS Properties
-│   │           └── events.astro # Panorama Events
+│   │       ├── changelog/index.astro
+│   │       ├── changelog/[version].astro
+│   │       └── panorama/{api,css,events}.astro
+│   ├── data/                   # Scope wrappers around @moddota/dota-data
+│   │   ├── vscripts-data.ts        # Lua API → vscriptsScope
+│   │   ├── events-data.ts          # Game events → eventsScope
+│   │   ├── panorama-api-data.ts    # Panorama JS API → panoramaApiScope
+│   │   ├── panorama-css-data.ts    # Panorama CSS → panoramaCssScope
+│   │   ├── panorama-events-data.ts # Panorama events → panoramaEventsScope
+│   │   └── sidebar.ts              # Static article sidebar tree
 │   ├── components/
-│   │   ├── api/                # React components for API reference
-│   │   │   ├── AppContext.tsx   # React context: dark mode state
-│   │   │   ├── DeclarationsPage.tsx # Main page component: sidebar + content
-│   │   │   ├── Lists.tsx       # LazyList (react-virtualized) + ScrollableList
-│   │   │   ├── Search/
-│   │   │   │   └── index.tsx   # SearchBox, filters, useRouterSearch
-│   │   │   ├── Docs/
-│   │   │   │   ├── api.ts      # Declaration types (Class, Function, Enum, Constant, CssProperty)
-│   │   │   │   ├── ClassDeclaration.tsx
-│   │   │   │   ├── FunctionDeclaration.tsx
-│   │   │   │   ├── Field.tsx
-│   │   │   │   ├── Enum.tsx
-│   │   │   │   ├── Constant.tsx
-│   │   │   │   ├── CssProperty.tsx
-│   │   │   │   ├── ContentList.tsx
-│   │   │   │   ├── DeclarationsContext.ts
-│   │   │   │   ├── types.tsx   # Type rendering components
-│   │   │   │   └── utils/      # filtering.tsx, components.tsx, styles.tsx
-│   │   │   ├── pages/          # Page-specific React components
+│   │   ├── api/                # React components for the API browser
+│   │   │   ├── pages/          # Page-level components imported by api/*.astro
+│   │   │   │   ├── VScriptsPage.tsx
+│   │   │   │   ├── EventsPage.tsx
+│   │   │   │   ├── ConvarsPage.tsx
+│   │   │   │   ├── ModifiersPage.tsx
 │   │   │   │   ├── AbilitiesPage.tsx
 │   │   │   │   ├── ChangelogPage.tsx
-│   │   │   │   ├── ConvarsPage.tsx
-│   │   │   │   └── ModifiersPage.tsx
+│   │   │   │   └── PanoramaApiPage.tsx, PanoramaCssPage.tsx, PanoramaEventsPage.tsx
+│   │   │   ├── DeclarationsPage.tsx  # Generic list/detail view (NavBar + Sidebar + ContentList)
+│   │   │   ├── Lists.tsx             # LazyList (react-virtualized) + ScrollableList
+│   │   │   ├── Search/index.tsx      # Search box, fuzzy filter, availability filters
+│   │   │   ├── AppContext.tsx        # App-level React context (theme, search)
+│   │   │   ├── KindIcon/             # SVG icons for declaration kinds (Class, Enum, ...)
 │   │   │   ├── layout/
-│   │   │   │   ├── NavBar.tsx  # Top nav with route links + theme toggle
-│   │   │   │   ├── Sidebar.tsx # Left sidebar with declaration list
-│   │   │   │   └── index.tsx   # Layout wrapper
-│   │   │   └── KindIcon/       # SVG icons for declaration kinds
-│   │   ├── articles/           # Article-specific components
-│   │   │   ├── ArticleEditor.tsx
-│   │   │   ├── ArticleSidebar.astro
-│   │   │   ├── Gfycat.astro
-│   │   │   ├── MultiCodeBlock.astro
-│   │   │   ├── StaticVideo.astro
-│   │   │   ├── Tabs.astro / TabItem.astro
-│   │   │   └── YouTube.astro
-│   │   ├── Gfycat.tsx          # Shared React components
-│   │   ├── MultiCodeBlock.tsx
-│   │   ├── StaticVideo.tsx
-│   │   └── YouTube.tsx
-│   ├── content/
-│   │   └── articles/           # Markdown articles (content collection)
-│   ├── data/
-│   │   ├── api-data.ts         # Transforms @moddota/dota-data → scopes for React components
-│   │   └── sidebar.ts          # Article sidebar tree definition
-│   ├── styles/
-│   │   └── global.css          # Tailwind import + CSS custom properties (light/dark themes)
+│   │   │   │   ├── NavBar.tsx        # Top nav with route links + theme toggle
+│   │   │   │   └── Sidebar.tsx       # Left sidebar with declaration list
+│   │   │   └── Docs/
+│   │   │       ├── api.ts            # Type definitions (Declaration, ClassDeclaration, ...)
+│   │   │       ├── DeclarationsContext.ts  # React context: { root, declarations }
+│   │   │       ├── ClassDeclaration.tsx, FunctionDeclaration.tsx, Enum.tsx, Constant.tsx, CssProperty.tsx
+│   │   │       ├── Field.tsx, ContentList.tsx, AvailabilityBadge.tsx
+│   │   │       ├── ColoredSyntax.tsx, ReferencesLink.tsx, Star.tsx
+│   │   │       ├── types.tsx         # Type rendering components
+│   │   │       └── utils/
+│   │   │           ├── filtering.tsx # doSearch() with operators (on:server, type:X, ...)
+│   │   │           ├── components.tsx, styles.tsx
+│   │   ├── articles/                 # Article-specific Astro components (wrappers around the React ones)
+│   │   │   └── ArticleSidebar.astro, Gfycat.astro, YouTube.astro, MultiCodeBlock.astro, StaticVideo.astro, Tabs.astro, TabItem.astro, ArticleEditor.tsx
+│   │   ├── Gfycat.tsx, YouTube.tsx, StaticVideo.tsx, MultiCodeBlock.tsx  # React versions used in MDX
+│   ├── utils/
+│   │   ├── fuzzySearch.ts            # fuzzyMatch(), fuzzyContains(), fuzzySort()
+│   │   └── types.tsx                 # isNotNil, intersperse, assertNever
 │   ├── plugins/
-│   │   ├── remark-remove.mjs   # Remark plugin: strips content
-│   │   └── remark-components.mjs # Remark plugin: injects components
-│   └── utils/
-│       ├── fuzzySearch.ts      # Fuzzy matching: fuzzyMatch(), fuzzyContains(), fuzzySort()
-│       └── types.tsx           # isNotNil, intersperse, assertNever
-├── public/                     # Static assets (images, favicon)
-├── dist/                       # Build output (not committed)
+│   │   ├── remark-components.mjs     # Converts <YouTube>, <Gfycat>, <StaticVideo> tags in markdown to iframes
+│   │   └── remark-remove.mjs         # Strips lines marked with @remove-next-line / @remove-line
+│   └── styles/
+│       └── global.css                # Tailwind import + theme custom properties (light/dark)
+├── _articles/                  # ⚠️ Legacy markdown source (parallel to src/content/articles/) — kept for prettier ignore rules
 └── .github/workflows/
     ├── deploy.yml              # GitHub Pages deployment
-    └── ci.yml                  # CI checks
+    ├── ci.yml                  # CI checks
+    └── dependabot.yml
 ```
 
 ### Data Flow
 
 ```
-dota-data repo (files/ + lib/)
-    ↓ (prebuild script copies to node_modules)
-@moddota/dota-data package
-    ↓ (imported in src/data/api-data.ts)
-scopes object: { vscripts, vscriptsEvents, panorama, panoramaCss, panoramaEvents }
-    ↓ (passed as props to React islands in .astro pages)
-DeclarationsPage (client:only="react") → NavBar + Sidebar + ContentList
+sibling dota-data/ repo (files/ + lib/)
+    ↓ (prebuild script copies into node_modules/@moddota/dota-data)
+@moddota/dota-data
+    ↓ (imported in src/data/<x>-data.ts)
+Scope objects: { root: '/path', declarations: Declaration[] }
+    ↓ (imported by React Page components in src/components/api/pages/)
+DeclarationsPage → NavBar + Sidebar + ContentList
     ↓ (useFilteredData hook)
-Filtered/searched declarations → rendered by ClassDeclaration/FunctionDeclaration/Enum/etc.
+Filtered/searched declarations → rendered by ClassDeclaration / FunctionDeclaration / Enum / etc.
 ```
 
 ### Key Data Types
@@ -151,21 +145,18 @@ The `Declaration` union type (in `src/components/api/Docs/api.ts`) is the core d
 - `Constant` – named numeric constants
 - `CssProperty` – CSS properties with examples
 
+`DeclarationsContextType` (in `src/components/api/Docs/DeclarationsContext.ts`):
+```ts
+{ root: string; declarations: Declaration[] }
+```
+
 ### Theme System
 
-Two themes (light/dark) defined via CSS custom properties in `src/styles/global.css`.
-Theme toggled by setting `data-theme="dark"` on `<html>`, persisted in `localStorage` key `"theme"`.
+Two themes (light/dark) defined via CSS custom properties in `src/styles/global.css`:
+- Light is the default (`:root` and `@media (prefers-color-scheme: light)`)
+- Dark activates via `[data-theme="dark"]` attribute on `<html>`, persisted in `localStorage["theme"]`
 
-Key CSS variables:
-- `--color-group` – card/panel background
-- `--color-group-members` – inner content area background
-- `--color-group-border` – card border color
-- `--color-group-shadow` – card box-shadow
-- `--color-highlight` – accent color (#89a62e)
-- `--color-text` / `--color-text-dim` / `--color-text-faded` – text hierarchy
-- `--color-sidebar` – sidebar background
-- `--color-searchbox-*` – search input styling
-- `--color-syntax-*` – code syntax highlighting colors
+Key CSS variables: `--color-highlight` (#89a62e ModDota green), `--color-text`, `--color-text-dim`, `--color-group`, `--color-group-border`, `--color-sidebar`, `--color-syntax-*`.
 
 ---
 
@@ -174,23 +165,24 @@ Key CSS variables:
 ### Dev Server
 
 ```bash
-npm run dev              # Astro dev server with HMR
+npm install         # First time only
+npm run dev         # Astro dev server with HMR
 ```
+
+Opens at `http://localhost:4321`. Article changes hot-reload. React components hot-reload via Vite HMR.
 
 ### Production Build
 
 ```bash
-npm run build            # prebuild (copy dota-data) → astro build → dist/
-npm run preview          # Preview built site locally
+npm run build       # prebuild (copy dota-data) → astro build → dist/
+npm run preview     # Preview the built site locally
 ```
 
-### Syncing dota-data Changes
-
-The `prebuild` script in `package.json` searches for the sibling `dota-data` directory and copies `files/` and `lib/` into `node_modules/@moddota/dota-data/`. The Vite aliases in `astro.config.mjs` resolve `~components` and `~data` paths.
+The `prebuild` step (`package.json:11`) searches for sibling `dota-data` at `./dota-data`, `../dota-data`, or `../../dota-data`, then copies its `files/` and `lib/` directories into `node_modules/@moddota/dota-data/`.
 
 ### Deployment
 
-GitHub Pages via `.github/workflows/deploy.yml`. Base URL: `/moddota.github.io/`.
+GitHub Pages via `.github/workflows/deploy.yml`. Triggered on push to `source` branch, manual dispatch, or external `dota-data-updated` repository_dispatch event. Builds `dist/` and pushes to `gh-pages` branch. Base URL: `/moddota.github.io/`.
 
 ---
 
@@ -198,74 +190,78 @@ GitHub Pages via `.github/workflows/deploy.yml`. Base URL: `/moddota.github.io/`
 
 ### Astro Page → React Island Pattern
 
-Every API page follows this pattern:
+API pages are thin Astro wrappers around React Page components. Each page component self-imports its scope from `src/data/<x>-data.ts`:
 
 ```astro
 ---
+// src/pages/api/vscripts.astro
 import ApiLayout from '../../layouts/ApiLayout.astro';
-import { DeclarationsPage } from '../../components/api/DeclarationsPage';
-import { scopes } from '../../data/api-data';
+import { VScriptsPage } from '../../components/api/pages/VScriptsPage';
 ---
 
-<ApiLayout title="Page Title">
-  <DeclarationsPage
-    client:only="react"
-    context={scopes.myScope}
-    hoist={[
-      { label: "Functions", icon: "function", scope: "functions" },
-    ]}
-  />
+<ApiLayout title="Lua API">
+  <VScriptsPage client:load />
 </ApiLayout>
 ```
 
-The `client:only="react"` directive ensures the component is only rendered in the browser (no SSR).
+```ts
+// src/data/vscripts-data.ts
+import { allData } from '@moddota/dota-data/lib/helpers/vscripts';
+import type { DeclarationsContextType } from '../components/api/Docs/DeclarationsContext';
+
+export const vscriptsScope: DeclarationsContextType = {
+  root: '/vscripts',
+  declarations: allData
+    .map((declaration) => ({ ...declaration, isStarred: false }))
+    .sort((a, b) => a.name.localeCompare(b.name)),
+};
+```
+
+`client:load` ensures the React component hydrates as soon as the page loads (not pre-rendered).
 
 ### Article Content Collection Pattern
 
-Articles live in `src/content/articles/` as Markdown files with frontmatter:
+Articles live in `src/content/articles/` as Markdown/MDX files with frontmatter:
 
 ```markdown
 ---
 title: My Article
 author: AuthorName
-steamId: "12345"
-date: "2024-01-15"
+steamId: '76561198000000000'
+date: 06.04.2026
 ---
 
-Article content here...
+Article content here. You can embed:
+
+<YouTube id="abc123" />
+<Gfycat id="cooluniqueid" />
+<StaticVideo path="my-video.mp4" controls />
 ```
 
-Schema validated by Zod in `src/content.config.ts`. Rendered via `src/pages/[...slug].astro` + `ArticleLayout.astro`.
-
-### Custom Page Pattern (modifiers, convars, changelog, abilities)
-
-Pages that need custom layouts have dedicated React components in `src/components/api/pages/`:
-- `AbilitiesPage.tsx`
-- `ConvarsPage.tsx`
-- `ModifiersPage.tsx`
-- `ChangelogPage.tsx`
+Schema validated by Zod in `src/content.config.ts`. Rendered via `src/pages/[...slug].astro` + `ArticleLayout.astro`. The `<YouTube>`, `<Gfycat>`, `<StaticVideo>` tags are processed by the `remark-components` plugin into iframes — no React import needed.
 
 ### Search & Filtering
 
-- `useRouterSearch()` reads `?search=` from URL
+- `useRouterSearch()` reads `?search=` from the URL
 - `useFilteredData(declarations, availabilityFilters)` orchestrates search + scope filtering
 - `doSearch()` in `Docs/utils/filtering.tsx` supports special operators: `on:server`, `on:client`, `-on:server`, `is:abstract`, `type:TypeName`
-- Name matching uses fuzzy search (`fuzzyContains` from `utils/fuzzySearch.ts`)
+- Name matching uses fuzzy search (`fuzzyContains` from `src/utils/fuzzySearch.ts`)
 - Search results sorted by fuzzy match relevance score
 
 ### Virtualized Lists
 
-For large datasets, `LazyList` (react-virtualized) is used during search, `ScrollableList` for browsing.
+For large datasets (e.g., 1000+ VScripts declarations), `LazyList` from `Lists.tsx` wraps react-virtualized's `List` + `CellMeasurer`. Use `ScrollableList` for shorter lists where measuring isn't needed.
 
 ### Theming in React Components
 
-Use CSS custom properties instead of styled-components theme tokens:
+Use CSS custom properties instead of theme tokens or styled-components:
 
 ```tsx
-// Use CSS variables
 <div style={{ color: 'var(--color-text)', background: 'var(--color-group)' }} />
+```
 
-// Or in CSS/class-based styling
+Or via class-based CSS:
+```css
 .my-component {
   background-color: var(--color-group);
   border: 1px solid var(--color-group-border);
@@ -278,34 +274,35 @@ Use CSS custom properties instead of styled-components theme tokens:
 
 ### npm Package Dependency
 
-`package.json` declares `"@moddota/dota-data": "^0.45.0"`.
+`package.json` declares `"@moddota/dota-data": "^0.45.0"`. The prebuild script overlays a fresh local copy of the sister project's `files/` and `lib/` directories.
 
 ### Import Paths
 
 | Import | Data |
 |--------|------|
-| `@moddota/dota-data/lib/helpers/vscripts` | Processed Lua API declarations |
+| `@moddota/dota-data/lib/helpers/vscripts` | Processed Lua API declarations (`allData`) |
 | `@moddota/dota-data/files/events` | Game events (vscripts) |
 | `@moddota/dota-data/files/panorama/api` | Panorama JS API interfaces |
 | `@moddota/dota-data/files/panorama/css` | Panorama CSS properties |
 | `@moddota/dota-data/files/panorama/enums` | Panorama enums |
 | `@moddota/dota-data/files/panorama/events` | Panorama events |
-| `@moddota/dota-data/files/vscripts/api-types` | VScript API type definitions |
+| `@moddota/dota-data/files/vscripts/api-types` | VScript type definitions |
 | `@moddota/dota-data/files/vscripts/modifier_list.json` | Modifier names by category |
 | `@moddota/dota-data/files/convars.json` | Console variables |
 
 ### Changelog Data
 
-Changelog data is fetched at runtime from GitHub raw URLs, not bundled in the build.
+Changelog data is fetched at runtime from `/changelog-data/...` URLs. In dev, an Astro middleware (`astro.config.mjs`) serves these from sibling `dota-data/files/`. In production they're available from the same path on the deployed site (likely served from public/ or by a build step — verify in deploy.yml when adding new versions).
 
 ---
 
 ## Adding Features Checklist
 
-1. **New API page** → Create `src/pages/api/<name>.astro` wrapping a React island with `client:only="react"`, add scope in `src/data/api-data.ts`, add NavBar link in `src/components/api/layout/NavBar.tsx`
-2. **New custom API page** → Create React component in `src/components/api/pages/`, wrap in `.astro` page
-3. **New search operator** → Add to `doSearch()` in `src/components/api/Docs/utils/filtering.tsx`
-4. **New declaration kind** → Add to `Declaration` union in `Docs/api.ts` + rendering component + `renderItem` in `ContentList.tsx`
-5. **New theme tokens** → Add CSS variables to both light and dark sections in `src/styles/global.css`
-6. **New article** → Create `.md` file in `src/content/articles/` with frontmatter, add entry to `src/data/sidebar.ts`
-7. **New article component** → Add Astro component to `src/components/articles/`, use in markdown via remark plugin or MDX
+1. **New API page** → Create `src/pages/api/<name>.astro` wrapping a React component with `client:load`. Create matching `<Name>Page.tsx` in `src/components/api/pages/` and a scope file in `src/data/<name>-data.ts`. Add NavBar link in `src/components/api/layout/NavBar.tsx`.
+2. **New custom API page (non-DeclarationsPage)** → Create React component in `src/components/api/pages/`, write its own UI (e.g. `ChangelogPage` doesn't reuse `DeclarationsPage`).
+3. **New search operator** → Add to `doSearch()` in `src/components/api/Docs/utils/filtering.tsx`.
+4. **New declaration kind** → Add to `Declaration` union in `Docs/api.ts`, create rendering component, add `case` in `ContentList.tsx` `renderItem`.
+5. **New theme tokens** → Add CSS variables to both light (`:root`, `@media (prefers-color-scheme: light)`) and dark (`[data-theme="dark"]`) sections in `src/styles/global.css`.
+6. **New article** → Create `.md` (or `.mdx`) file in `src/content/articles/` with frontmatter. Add an entry to `src/data/sidebar.ts` for navigation.
+7. **New article component** → Add a `.astro` component in `src/components/articles/`. To make it usable in plain markdown (without MDX import), also wire it through `src/plugins/remark-components.mjs`.
+8. **New static asset** → Drop into `public/`. References use `/images/...` (Astro automatically prepends the base path in production).

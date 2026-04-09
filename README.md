@@ -1,30 +1,17 @@
 # ModDota
 
-Documentation and API reference for Dota 2 modding.
+Documentation and API reference for Dota 2 modding, built with [Astro](https://astro.build/).
 
-The site consists of two parts:
-- **Articles** — tutorials and guides built with [Docusaurus](https://docusaurus.io/) (root)
-- **API Reference** — interactive Lua/Panorama API browser built with React (under `/api`)
+The site combines tutorial articles and an interactive Lua/Panorama API browser into a single static site.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) 22+
 - npm
 
-## Local Development
+## Setup
 
-### Articles site
-
-```bash
-npm install
-npm start
-```
-
-Opens at `http://localhost:3000`. Changes to `_articles/*.md` hot-reload automatically.
-
-### API site
-
-The API site requires [dota-data](https://github.com/iwasinminedream/dota-data) cloned as a sibling directory:
+The site consumes the [`@moddota/dota-data`](https://github.com/iwasinminedream/dota-data) package for API reference data. Clone it as a sibling directory for live updates:
 
 ```
 parent/
@@ -32,61 +19,56 @@ parent/
   moddota.github.io/  # this repo
 ```
 
-Then:
+The `prebuild` script automatically copies `dota-data/files/` and `dota-data/lib/` into `node_modules/@moddota/dota-data` before each build.
+
+## Local Development
 
 ```bash
-cd api
 npm install
 npm run dev
 ```
 
-Opens at `http://localhost:3000`.
+Opens at `http://localhost:4321`. Hot-reloads on changes to articles, components, and styles.
 
-### Build
+## Build
 
 ```bash
-# Build articles
-npm run build
-
-# Build API
-cd api
-npm run build
+npm run build       # Production build → dist/
+npm run preview     # Preview production build locally
 ```
 
-### Lint
+## Lint
 
 ```bash
-npm run lint          # Prettier check (articles)
-cd api && npm run lint  # ESLint (API)
+npm run lint        # Prettier check
+npm run fix:prettier  # Apply formatting
 ```
 
 ## Project Structure
 
 ```
-_articles/           # Markdown articles (Docusaurus docs)
-  abilities/         # Ability/item/modifier tutorials
-  scripting/         # Lua and TypeScript scripting guides
-  panorama/          # Panorama UI tutorials
-  assets/            # Particles, models, maps, sounds
-  units/             # Unit creation guides
-  tools/             # Development tools and setup
-api/                 # API reference site (React SPA)
-src/                 # Docusaurus pages and components
-  pages/             # Custom pages (e.g. article editor)
-  components/        # Shared React components
-docusaurus/          # Docusaurus plugins (remark)
-static/              # Static assets (images, videos)
+src/
+  pages/             # Astro pages (route entries)
+  content/
+    articles/        # Markdown/MDX article content collection
+  components/        # Shared React + Astro components
+    api/             # API browser (abilities, modifiers, vscripts, panorama, ...)
+  data/              # Data adapters wrapping @moddota/dota-data
+  styles/            # Global Tailwind + custom CSS
+  plugins/           # Remark plugins (remark-components, remark-remove)
+public/              # Static assets served as-is (images, videos, fonts)
 .github/workflows/   # CI and deploy workflows
+astro.config.mjs     # Astro config (MDX, React, Tailwind integrations)
 ```
 
 ## Writing Articles
 
-Articles are Markdown files in `_articles/` with YAML frontmatter:
+Articles are Markdown/MDX files in `src/content/articles/` with YAML frontmatter:
 
 ```yaml
 ---
-title: "My Article Title"
-author: "Your Name"
+title: 'My Article Title'
+author: 'Your Name'
 steamId: '76561198000000000'
 date: 06.04.2026
 ---
@@ -100,4 +82,4 @@ See [Contribute](/contribute) for more details on formatting, embeds, and submis
 
 ## Deployment
 
-The site deploys automatically to GitHub Pages when changes are pushed to the `source` branch. Both articles and API are built and combined into a single deployment.
+The site deploys automatically to GitHub Pages when changes are pushed to the `source` branch.
