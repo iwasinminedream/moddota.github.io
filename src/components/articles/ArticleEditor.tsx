@@ -4,7 +4,6 @@ const REPO_OWNER = "iwasinminedream";
 const REPO_NAME = "moddota.github.io";
 const BRANCH = "source";
 const ARTICLES_PATH = "src/content/articles";
-const MAX_URL_LENGTH = 6000;
 
 const CATEGORIES = [
   { value: "", label: "Root (no category)" },
@@ -16,8 +15,8 @@ const CATEGORIES = [
   { value: "tools", label: "Tools" },
 ];
 
-function generateSlug(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+function titleToFilename(title: string): string {
+  return title.trim().replace(/\s+/g, "-");
 }
 
 function generateMarkdown(title: string, author: string, steamId: string, content: string): string {
@@ -70,6 +69,7 @@ export function ArticleEditor() {
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [activeTab, setActiveTab] = useState<"editor" | "preview">("editor");
+  const [copied, setCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-save to localStorage
@@ -94,26 +94,24 @@ export function ArticleEditor() {
     return () => clearTimeout(timer);
   }, [title, author, steamId, category, content]);
 
-  const slug = useMemo(() => generateSlug(title), [title]);
+  const filename = useMemo(() => titleToFilename(title), [title]);
   const markdown = useMemo(() => generateMarkdown(title, author, steamId, content), [title, author, steamId, content]);
-  const filePath = category ? `${ARTICLES_PATH}/${category}/${slug}.md` : `${ARTICLES_PATH}/${slug}.md`;
+  const filePath = category ? `${ARTICLES_PATH}/${category}/${filename}.md` : `${ARTICLES_PATH}/${filename}.md`;
 
   const githubNewFileUrl = useMemo(() => {
-    return `https://github.com/${REPO_OWNER}/${REPO_NAME}/new/${BRANCH}/?filename=${encodeURIComponent(filePath)}&value=${encodeURIComponent(markdown)}`;
-  }, [filePath, markdown]);
+    const base = `https://github.com/${REPO_OWNER}/${REPO_NAME}/new/${BRANCH}/`;
+    return filename ? `${base}?filename=${encodeURIComponent(filePath)}` : base;
+  }, [filename, filePath]);
 
-  const isUrlTooLong = githubNewFileUrl.length > MAX_URL_LENGTH;
-  const isValid = title.trim().length > 0 && content.trim().length > 0;
-
-  const handleDownload = useCallback(() => {
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${slug || "article"}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [markdown, slug]);
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      console.error("Failed to copy markdown:", e);
+    }
+  }, [markdown]);
 
   // Toolbar helpers
   const wrapSelection = useCallback((before: string, after: string) => {
@@ -223,20 +221,18 @@ export function ArticleEditor() {
 
       {/* Action bar */}
       <div style={{ padding: "12px 16px", borderTop: "1px solid var(--color-border)", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        {!isUrlTooLong ? (
-          <a
-            href={isValid ? githubNewFileUrl : undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ padding: "10px 24px", backgroundColor: isValid ? "var(--color-highlight)" : "var(--color-text-faded)", color: "#fff", borderRadius: 6, textDecoration: "none", fontWeight: 600, pointerEvents: isValid ? "auto" : "none" }}
-          >
-            Create PR on GitHub
-          </a>
-        ) : null}
-        <button onClick={handleDownload} disabled={!isValid} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "var(--color-highlight)", borderRadius: 6, border: "1px solid var(--color-highlight)", cursor: isValid ? "pointer" : "not-allowed", fontWeight: 600, opacity: isValid ? 1 : 0.5 }}>
-          Download .md
+        <a
+          href={githubNewFileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ padding: "10px 24px", backgroundColor: "var(--color-highlight)", color: "#fff", borderRadius: 6, textDecoration: "none", fontWeight: 600 }}
+        >
+          Create PR on GitHub
+        </a>
+        <button onClick={handleCopy} style={{ padding: "10px 24px", backgroundColor: "transparent", color: "var(--color-highlight)", borderRadius: 6, border: "1px solid var(--color-highlight)", cursor: "pointer", fontWeight: 600 }}>
+          {copied ? "Copied!" : "Copy markdown"}
         </button>
-        {slug && <small style={{ color: "var(--color-text-dim)" }}>File: <code>{filePath}</code></small>}
+        {filename && <small style={{ color: "var(--color-text-dim)" }}>File: <code>{filePath}</code></small>}
       </div>
 
       <style>{`
