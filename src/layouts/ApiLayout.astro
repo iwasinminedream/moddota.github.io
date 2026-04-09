@@ -26,6 +26,24 @@ const base = import.meta.env.BASE_URL;
         }
       })();
     </script>
+    <script is:inline define:vars={{ base }}>
+      // SPA fallback decoder — must run before React islands hydrate so that
+      // components reading `window.location.pathname` see the original URL.
+      // Pairs with `src/pages/404.astro`, which stashes the original path in
+      // sessionStorage before redirecting to the section's index page.
+      (function () {
+        try {
+          var stashed = sessionStorage.getItem('__spa_redirect');
+          if (!stashed) return;
+          sessionStorage.removeItem('__spa_redirect');
+          var target = base + stashed;
+          // Only restore if we actually landed on an ancestor of the stashed path.
+          if (window.location.pathname.indexOf(base) !== 0) return;
+          if (target.indexOf(window.location.pathname.replace(/\/$/, '')) !== 0) return;
+          window.history.replaceState({}, '', target + window.location.search + window.location.hash);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="api-root" style="display:flex;flex-direction:column;height:100%;">

@@ -646,16 +646,29 @@ export function ChangelogPage() {
   const [currentEntry, setCurrentEntry] = useState<ChangelogEntry | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>("");
 
+  const resolveVersionFromUrl = useCallback((data: IndexEntry[]): string => {
+    const path = window.location.pathname;
+    const match = path.match(/changelog\/([^/]+)/);
+    const raw = match ? match[1] : "";
+    if (raw && raw !== "latest") return raw;
+    return data[0]?.version ?? "";
+  }, []);
+
   useEffect(() => {
     loadChangelogIndex().then((data) => {
       setIndex(data);
       setIndexLoading(false);
-      const path = window.location.pathname;
-      const match = path.match(/changelog\/(.+)/);
-      const version = match ? match[1] : data[0]?.version ?? "";
-      setSelectedVersion(version);
+      setSelectedVersion(resolveVersionFromUrl(data));
     });
-  }, []);
+  }, [resolveVersionFromUrl]);
+
+  // Sync state with URL when the user uses browser back/forward buttons.
+  useEffect(() => {
+    if (index.length === 0) return;
+    const handler = () => setSelectedVersion(resolveVersionFromUrl(index));
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, [index, resolveVersionFromUrl]);
 
   const loadVersion = useCallback(async (version: string) => {
     if (!version) return;
@@ -683,7 +696,8 @@ export function ChangelogPage() {
 
   const selectVersion = (v: string) => {
     setSelectedVersion(v);
-    window.history.pushState({}, "", `${base}api/changelog/${v}`);
+    // Use trailing slash to match Astro's directory-style static output.
+    window.history.pushState({}, "", `${base}api/changelog/${v}/`);
   };
 
   const spinnerKeyframes = `@keyframes changelog-spin { to { transform: rotate(360deg); } }`;
@@ -819,7 +833,7 @@ export function ChangelogPage() {
           {index.map((entry) => (
             <a
               key={entry.version}
-              href={`${base}api/changelog/${entry.version}`}
+              href={`${base}api/changelog/${entry.version}/`}
               onClick={(e) => { e.preventDefault(); selectVersion(entry.version); }}
               className="changelog-sidebar-item"
               style={{
