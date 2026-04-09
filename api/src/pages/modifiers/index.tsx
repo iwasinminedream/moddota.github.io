@@ -12,7 +12,7 @@ import { useRouterSearch } from "~components/Search";
 const modifiers = modifiersData as Record<string, string[]>;
 
 // Non-hero categories that go at the top
-const specialCategories = ["neutral", "event", "items", "other", "special_bonus", "roshan", "rune"];
+const specialCategories = ["generic", "neutral", "event", "items", "other", "special_bonus", "roshan", "rune"];
 
 // Separate hero vs special categories, sort heroes alphabetically
 const categories = Object.entries(modifiers)

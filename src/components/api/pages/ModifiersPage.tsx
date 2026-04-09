@@ -5,7 +5,7 @@ import { SearchBox, getSearchFromUrl } from "../Search";
 import { NavBar } from "../layout/NavBar";
 
 const modifiers = modifiersData as Record<string, string[]>;
-const specialCategories = ["neutral", "event", "items", "other", "special_bonus", "roshan", "rune"];
+const specialCategories = ["generic", "neutral", "event", "items", "other", "special_bonus", "roshan", "rune"];
 
 const categories = Object.entries(modifiers)
   .map(([name, items]) => ({ name, count: items.length, isHero: !specialCategories.includes(name) }))

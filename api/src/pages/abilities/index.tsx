@@ -21,11 +21,25 @@ const heroMap = heroMapData as Record<string, string>;
 const allModifiers: string[] = Object.values(modifiersData as Record<string, string[]>).flat();
 
 function findModifiers(abilityName: string): string[] {
-  const searchName = abilityName.startsWith("item_")
-    ? abilityName.replace("item_", "")
-    : abilityName;
-  return allModifiers.filter(
-    (m) => m.includes(`modifier_${searchName}`) || m.includes(`modifier_${abilityName}`),
+  // Items: match modifier_<itemBase> or modifier_<itemFull>
+  if (abilityName.startsWith("item_")) {
+    const itemBase = abilityName.replace("item_", "");
+    return allModifiers.filter(
+      (m) => m.includes(`modifier_${itemBase}`) || m.includes(`modifier_${abilityName}`),
+    );
+  }
+
+  // Hero abilities: try the full ability name AND the suffix without the
+  // hero prefix (e.g. "ancient_apparition_ice_blast" → also match "modifier_ice_blast").
+  const candidates: string[] = [`modifier_${abilityName}`];
+  const hero = heroMap[abilityName];
+  if (hero && abilityName.startsWith(hero + "_")) {
+    const suffix = abilityName.substring(hero.length + 1);
+    if (suffix.length >= 4) candidates.push(`modifier_${suffix}`);
+  }
+
+  return allModifiers.filter((m) =>
+    candidates.some((c) => m === c || m.startsWith(c + "_") || m.endsWith("_" + c)),
   );
 }
 
