@@ -111,6 +111,7 @@ const categoryOrder = [
   "Panorama CSS",
   "Console Variables",
   "Modifiers",
+  "Properties Fixed",
   "Lua Types",
 ];
 
@@ -140,6 +141,7 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
   if (item.type === "unit") return "__units__";
   if (item.type === "kv_property") return "__kv_properties__";
   if (item.type === "modifier") return item.category || "Modifiers";
+  if (item.type === "modifier_property") return "__modifier_properties__";
   if (item.type === "property") return item.class || "Properties";
   return item.type || "Other";
 }
