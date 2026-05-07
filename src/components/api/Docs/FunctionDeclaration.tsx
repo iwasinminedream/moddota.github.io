@@ -46,6 +46,9 @@ export const FunctionDeclaration: React.FC<{
           {declaration.abstract && (
             <span title="Abstract: this method does not exist on the class, but it can be implemented on subclass">?</span>
           )}
+          {declaration.broken && (
+            <span title="This property may not work" style={{ color: "var(--color-highlight)", fontWeight: 700, fontSize: 16 }}>*</span>
+          )}
           <FunctionParameters args={declaration.args} />
           :&nbsp;
           <Types types={declaration.returns} />

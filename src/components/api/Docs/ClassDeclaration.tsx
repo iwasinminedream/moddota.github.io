@@ -34,6 +34,11 @@ export const ClassDeclaration: React.FC<{
       </ElementBadges>
     </CommonGroupHeader>
     <OptionalDescription description={declaration.description} />
+    {declaration.members.some((m) => m.kind === "function" && (m as api.ClassMethod).broken) && (
+      <div style={{ padding: "4px 10px", fontSize: 12, color: "var(--color-text-dim)", fontStyle: "italic" }}>
+        * Property marked with * may not work
+      </div>
+    )}
     {declaration.members.length > 0 && (
       <CommonGroupMembers style={{ padding: 8 }}>
         {declaration.members.map((member) => (
