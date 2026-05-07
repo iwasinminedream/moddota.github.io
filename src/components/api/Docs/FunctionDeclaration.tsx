@@ -42,12 +42,17 @@ export const FunctionDeclaration: React.FC<{
       <CommonGroupHeader>
         <CommonGroupSignature style={{ marginBottom: 3 }}>
           <KindIcon kind="function" size="big" />
+          {declaration.broken && (
+            <span
+              style={{ color: "#e8912d", fontWeight: "bold", cursor: "help" }}
+              title="This property may not work"
+            >
+              *{" "}
+            </span>
+          )}
           {declaration.name}
           {declaration.abstract && (
             <span title="Abstract: this method does not exist on the class, but it can be implemented on subclass">?</span>
-          )}
-          {declaration.broken && (
-            <span title="This property may not work" style={{ color: "var(--color-highlight)", fontWeight: 700, fontSize: 16 }}>*</span>
           )}
           <FunctionParameters args={declaration.args} />
           :&nbsp;

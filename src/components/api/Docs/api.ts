@@ -83,6 +83,7 @@ export interface EnumMember {
   description?: string;
   value: number;
   overflow?: true;
+  broken?: true;
 }
 
 export interface CssProperty {

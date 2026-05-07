@@ -9,6 +9,14 @@ const EnumMember: React.FC<api.EnumMember> = (props) => (
   <CommonGroupWrapper style={{ padding: "2px 5px" }}>
     <CommonGroupHeader>
       <CommonGroupSignature>
+        {props.broken && (
+          <span
+            style={{ color: "#e8912d", fontWeight: "bold", cursor: "help" }}
+            title="This property may not work"
+          >
+            *{" "}
+          </span>
+        )}
         {props.overflow && (
           <span
             style={{ color: "#e8912d", fontWeight: "bold", cursor: "help" }}
@@ -43,6 +51,11 @@ export const Enum: React.FC<{
       </ElementBadges>
     </CommonGroupHeader>
     <OptionalDescription description={element.description} />
+    {element.members.some((m) => m.broken) && (
+      <div style={{ padding: "4px 10px", fontSize: 12, color: "var(--color-text-dim)", fontStyle: "italic" }}>
+        Property marked with * may not work
+      </div>
+    )}
     {element.members.length > 0 && (
       <CommonGroupMembers>
         {element.members.map((member) => (

@@ -36,7 +36,7 @@ export const ClassDeclaration: React.FC<{
     <OptionalDescription description={declaration.description} />
     {declaration.members.some((m) => m.kind === "function" && (m as api.ClassMethod).broken) && (
       <div style={{ padding: "4px 10px", fontSize: 12, color: "var(--color-text-dim)", fontStyle: "italic" }}>
-        * Property marked with * may not work
+        Property marked with * may not work
       </div>
     )}
     {declaration.members.length > 0 && (
