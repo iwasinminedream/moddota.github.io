@@ -146,10 +146,11 @@ export function doSearch(
     );
   }
 
-  function filterName(member: { name: string }) {
+  function filterName(member: { name: string; description?: string }) {
     if (nameWords.length === 0) return undefined;
     const name = member.name.toLowerCase();
-    return nameWords.every((word) => name.includes(word));
+    const desc = (member.description ?? "").toLowerCase();
+    return nameWords.every((word) => name.includes(word) || desc.includes(word));
   }
 
   return declarations
