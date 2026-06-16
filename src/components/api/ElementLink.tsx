@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
+import { notifySearchChange } from "./Search";
 
 export function HashScrollHandler() {
   const didScroll = useRef(false);
@@ -43,7 +44,7 @@ export function ElementLink({ root, scope, hash }: { root: string; scope: string
     (e: React.MouseEvent) => {
       e.preventDefault();
       window.history.pushState({}, "", href);
-      window.dispatchEvent(new Event("popstate"));
+      notifySearchChange();
     },
     [href],
   );

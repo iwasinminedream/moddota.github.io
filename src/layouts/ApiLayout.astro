@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -17,14 +18,22 @@ const base = import.meta.env.BASE_URL;
     <title>{title} - ModDota API</title>
     <base href={base} />
     <link rel="icon" href={`${base}images/favicon.ico`} />
+    {/* Enables instant client-side navigation between API tabs (no full reload). */}
+    <ClientRouter />
     <script is:inline>
-      // Theme initialization - must run before body renders to prevent flash
-      (function() {
+      // Theme initialization - must run before body renders to prevent flash.
+      function applyTheme() {
         var theme = localStorage.getItem('theme');
         if (theme === 'dark' || (theme !== 'light' && !theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
         }
-      })();
+      }
+      applyTheme();
+      // Re-apply before paint on client-side (View Transitions) navigations so the
+      // theme never flashes. The listener is registered once and persists on document.
+      document.addEventListener('astro:after-swap', applyTheme);
     </script>
     <script is:inline define:vars={{ base }}>
       // SPA fallback decoder — must run before React islands hydrate so that

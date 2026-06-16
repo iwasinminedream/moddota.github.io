@@ -185,3 +185,11 @@ pre code {
 .api-sidebar a:hover {
   background: var(--color-sidebar-hover) !important;
 }
+
+/* Instant tab navigation: disable the default Astro view-transition cross-fade so
+   client-side navigation between API pages swaps immediately rather than animating. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

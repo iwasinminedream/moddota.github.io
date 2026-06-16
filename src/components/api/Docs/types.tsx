@@ -4,6 +4,7 @@ import { ColoredSyntax, getSyntaxColorFor } from "../ColoredSyntax";
 import type { ColoredSyntaxKind } from "../ColoredSyntax";
 import { assertNever, intersperse } from "../../../utils/types";
 import { DeclarationsContext } from "./DeclarationsContext";
+import { notifySearchChange } from "../Search";
 
 export const Types: React.FC<{ types: api.Type[] }> = ({ types }) => (
   <>
@@ -61,7 +62,7 @@ const ReferenceType: React.FC<{ name: string }> = ({ name }) => {
     (e: React.MouseEvent) => {
       e.preventDefault();
       window.history.pushState({}, "", href);
-      window.dispatchEvent(new Event("popstate"));
+      notifySearchChange();
     },
     [href],
   );

@@ -8,7 +8,7 @@ import { FunctionDeclaration } from "./FunctionDeclaration";
 import { CssProperty } from "./CssProperty";
 import type { Declaration } from "./api";
 import { DeclarationsContext } from "./DeclarationsContext";
-import { AvailabilityFiltersContext, SearchBox, getSearchFromUrl } from "../Search";
+import { AvailabilityFiltersContext, SearchBox, getSearchFromUrl, subscribeToSearchChange } from "../Search";
 
 function getBase(): string {
   if (typeof document === "undefined") return "/moddota.github.io/";
@@ -76,8 +76,7 @@ export function ContentList() {
       setSearch(getSearchFromUrl());
       setScope(getScopeFromUrl(root));
     };
-    window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
+    return subscribeToSearchChange(handler);
   }, [root]);
 
   const handleServerToggle = useCallback(() => {

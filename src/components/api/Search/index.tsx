@@ -19,6 +19,26 @@ export function getSearchFromUrl(): string {
   return new URLSearchParams(window.location.search).get("search") ?? "";
 }
 
+// Fired when the in-page search query changes. We use a dedicated event instead of
+// a synthetic `popstate` so Astro's ClientRouter doesn't treat a live-search update
+// as a navigation and reload/remount the page (which would reset the search input).
+export const SEARCH_CHANGE_EVENT = "moddota:search-change";
+
+export function notifySearchChange(): void {
+  window.dispatchEvent(new Event(SEARCH_CHANGE_EVENT));
+}
+
+// Re-run `handler` on in-page search changes and on real browser back/forward.
+// Returns an unsubscribe function.
+export function subscribeToSearchChange(handler: () => void): () => void {
+  window.addEventListener(SEARCH_CHANGE_EVENT, handler);
+  window.addEventListener("popstate", handler);
+  return () => {
+    window.removeEventListener(SEARCH_CHANGE_EVENT, handler);
+    window.removeEventListener("popstate", handler);
+  };
+}
+
 export function useCtrlFHook<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   useEffect(() => {
@@ -52,30 +72,58 @@ export function SearchBox({
   onClientToggle?: () => void;
 }) {
   const [search, setSearch] = useState(() => getSearchFromUrl());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const s = getSearchFromUrl();
     setSearch(s);
   }, []);
 
-  const setSearchQuery = useCallback(
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    },
+    [],
+  );
+
+  // Commit the query to the URL (which drives every page's filtering). Uses
+  // replaceState so live typing doesn't create a history entry per keystroke.
+  const commitSearch = useCallback(
     (query: string) => {
       const base = document.querySelector("base")?.getAttribute("href") || "/";
       if (query === "") {
-        window.history.pushState({}, "", `${base}api${baseUrl}`);
+        window.history.replaceState({}, "", `${base}api${baseUrl}`);
       } else {
-        window.history.pushState({}, "", `${base}api${baseUrl}?search=${encodeURIComponent(query)}`);
+        window.history.replaceState({}, "", `${base}api${baseUrl}?search=${encodeURIComponent(query)}`);
       }
-      window.dispatchEvent(new Event("popstate"));
+      notifySearchChange();
     },
     [baseUrl],
   );
 
+  // Update the input immediately, but debounce the (potentially expensive) filtering.
+  const handleChange = useCallback(
+    (query: string) => {
+      setSearch(query);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => commitSearch(query), 180);
+    },
+    [commitSearch],
+  );
+
+  const commitNow = useCallback(
+    (query: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      commitSearch(query);
+    },
+    [commitSearch],
+  );
+
   const handleKey = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "Enter") setSearchQuery(search);
+      if (event.key === "Enter") commitNow(search);
     },
-    [search, setSearchQuery],
+    [search, commitNow],
   );
 
   const ref = useCtrlFHook<HTMLInputElement>();
@@ -96,7 +144,7 @@ export function SearchBox({
       }}
     >
       <button
-        onClick={() => setSearchQuery(search)}
+        onClick={() => commitNow(search)}
         onMouseDown={(e) => e.preventDefault()}
         title="Search"
         style={{
@@ -126,7 +174,7 @@ export function SearchBox({
         ref={ref}
         placeholder="Search..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         onKeyUp={handleKey}
         aria-label="Search"
         style={{

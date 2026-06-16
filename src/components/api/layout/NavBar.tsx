@@ -37,6 +37,7 @@ export function NavBar() {
     { href: `${base}api/abilities`, label: "Abilities" },
     { href: `${base}api/modifiers`, label: "Modifiers" },
     { href: `${base}api/convars`, label: "Convars" },
+    { href: `${base}api/localization`, label: "Localization" },
     { href: `${base}api/changelog`, label: "Changelog" },
   ];
 

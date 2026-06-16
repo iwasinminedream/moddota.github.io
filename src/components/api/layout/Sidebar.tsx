@@ -3,6 +3,7 @@ import { KindIcon, type IconKind } from "../KindIcon";
 import type { Declaration } from "../Docs/api";
 import { DeclarationsContext } from "../Docs/DeclarationsContext";
 import { Star } from "../Docs/Star";
+import { notifySearchChange } from "../Search";
 
 export type HoistType = {
   label: string;
@@ -79,7 +80,7 @@ function SidebarElement({
     (e: React.MouseEvent) => {
       e.preventDefault();
       window.history.pushState({}, "", to);
-      window.dispatchEvent(new Event("popstate"));
+      notifySearchChange();
     },
     [to],
   );

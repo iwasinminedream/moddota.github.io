@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import convarsData from "@moddota/dota-data/files/convars.json";
 import { ScrollableList, LazyList } from "../Lists";
-import { SearchBox, getSearchFromUrl } from "../Search";
+import { SearchBox, getSearchFromUrl, subscribeToSearchChange } from "../Search";
 import { NavBar } from "../layout/NavBar";
 
 type ConvarData = { default: string; flags: string[]; description: string };
@@ -56,8 +56,7 @@ export function ConvarsPage() {
 
   useEffect(() => {
     const handler = () => { setSearch(getSearchFromUrl()); setSelectedFlag(new URLSearchParams(window.location.search).get("flag") || "all"); };
-    window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
+    return subscribeToSearchChange(handler);
   }, []);
 
   const filtered = useMemo(() => {

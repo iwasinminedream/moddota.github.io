@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import modifiersData from "@moddota/dota-data/files/vscripts/modifier_list.json";
 import { ScrollableList, LazyList } from "../Lists";
-import { SearchBox, getSearchFromUrl } from "../Search";
+import { SearchBox, getSearchFromUrl, subscribeToSearchChange } from "../Search";
 import { NavBar } from "../layout/NavBar";
 
 const modifiers = modifiersData as Record<string, string[]>;
@@ -43,8 +43,7 @@ export function ModifiersPage() {
 
   useEffect(() => {
     const handler = () => { setSearch(getSearchFromUrl()); setSelectedCategory(new URLSearchParams(window.location.search).get("category")); };
-    window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
+    return subscribeToSearchChange(handler);
   }, []);
 
   const filtered = useMemo(() => {

@@ -3,7 +3,7 @@ import abilitiesData from "@moddota/dota-data/files/abilities.json";
 import heroMapData from "@moddota/dota-data/files/ability-hero-map.json";
 import modifiersData from "@moddota/dota-data/files/vscripts/modifier_list.json";
 import { ScrollableList } from "../Lists";
-import { SearchBox, getSearchFromUrl } from "../Search";
+import { SearchBox, getSearchFromUrl, subscribeToSearchChange, notifySearchChange } from "../Search";
 import { fuzzyMatch } from "../../../utils/fuzzySearch";
 import { NavBar } from "../layout/NavBar";
 
@@ -405,7 +405,7 @@ function SidebarLink({
       onClick={(e) => {
         e.preventDefault();
         window.history.pushState({}, "", href);
-        window.dispatchEvent(new Event("popstate"));
+        notifySearchChange();
       }}
       style={{
         background: active ? "var(--color-sidebar-hover)" : "var(--color-sidebar)",
@@ -456,8 +456,7 @@ export function AbilitiesPage() {
       setSearch(getSearchFromUrl());
       setSelectedCategory(new URLSearchParams(window.location.search).get("category"));
     };
-    window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
+    return subscribeToSearchChange(handler);
   }, []);
 
   const filteredAbilities = useMemo(() => {
