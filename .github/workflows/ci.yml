@@ -9,6 +9,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout dota-data
+        uses: actions/checkout@v4
+        with:
+          repository: iwasinminedream/dota-data
+          path: dota-data
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
