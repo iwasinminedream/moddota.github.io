@@ -113,6 +113,7 @@ const categoryOrder = [
   "Modifiers",
   "Properties Fixed",
   "Lua Types",
+  "Localization",
 ];
 
 function getCategorySort(name: string): number {
@@ -142,6 +143,7 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
   if (item.type === "kv_property") return "__kv_properties__";
   if (item.type === "modifier") return item.category || "Modifiers";
   if (item.type === "modifier_property") return "__modifier_properties__";
+  if (item.type === "localization") return "__localization__";
   if (item.type === "property") return item.class || "Properties";
   return item.type || "Other";
 }
@@ -151,6 +153,7 @@ function getChangedGroupKey(item: { type?: string; class?: string; enum?: string
   if (item.type === "enum_member") return item.enum || "Enums";
   if (item.type === "ability") return "__abilities__";
   if (item.type === "unit") return "__units__";
+  if (item.type === "localization") return "__localization__";
   return item.type || "Other";
 }
 
@@ -172,6 +175,7 @@ function getGroupLabel(key: string): string {
     __abilities__: "Abilities",
     __units__: "Units",
     __kv_properties__: "KV Properties",
+    __localization__: "Strings",
   };
   return labels[key] || key;
 }
@@ -252,6 +256,16 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
   if (item.type === "ability") return <span style={{ fontWeight: 600, color: "#d97706" }}>{item.name}</span>;
   if (item.type === "unit") return <span style={{ fontWeight: 600, color: "#0891b2" }}>{item.name}</span>;
   if (item.type === "kv_property") return <span style={{ fontWeight: 600, color: "#7c3aed" }}>{item.name}</span>;
+  if (item.type === "localization") {
+    return (
+      <>
+        <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{item.name}</span>
+        {item.value !== undefined && (
+          <span style={{ color: "var(--color-text-dim, #888)", fontSize: 12 }}> = "{item.value}"</span>
+        )}
+      </>
+    );
+  }
   return <span style={{ fontWeight: 500 }}>{item.name || JSON.stringify(item)}</span>;
 }
 
@@ -610,6 +624,10 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
     for (const sectionType of ["changed", "added", "removed"] as SectionType[]) {
       const cats = sections[sectionType];
       for (const { category, items } of cats) {
+        // Localization diffs can be huge, so keep that category collapsed by default.
+        if (category === "Localization") {
+          autoCollapse.add(`${sectionType}-cat-${category}`);
+        }
         for (const item of items) {
           if ((item as ChangeItem).type === "modifier") {
             autoCollapse.add(

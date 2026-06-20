@@ -51,19 +51,27 @@ const entryCache = new Map<DotaLanguage, LocalizationEntry[]>();
 //  - Otherwise, fall back to the key minus its last segment so flat families
 //    (e.g. `dota_ability_variable_*`) still cluster together.
 function assignGroups(entries: LocalizationEntry[]): void {
-  const keySet = new Set<string>();
-  for (const e of entries) keySet.add(e.key);
+  // Map lowercased key -> actual key so prefix matching is case-insensitive. Valve
+  // mixes casing across related tokens (e.g. the item name
+  // `DOTA_Tooltip_Ability_item_falcon_blade` vs its fields
+  // `DOTA_Tooltip_ability_item_falcon_blade_Lore`), which would otherwise split one
+  // entity into several blocks.
+  const keyByLower = new Map<string, string>();
+  for (const e of entries) {
+    if (!keyByLower.has(e.keyLower)) keyByLower.set(e.keyLower, e.key);
+  }
 
   const anchorParent = new Map<string, string | null>();
   const parents = new Set<string>();
 
   for (const e of entries) {
-    const parts = e.key.split("_");
+    const parts = e.keyLower.split("_");
     let parent: string | null = null;
     for (let i = parts.length - 1; i >= 1; i--) {
-      const prefix = parts.slice(0, i).join("_");
-      if (keySet.has(prefix)) {
-        parent = prefix;
+      const prefixLower = parts.slice(0, i).join("_");
+      const actual = keyByLower.get(prefixLower);
+      if (actual && actual !== e.key) {
+        parent = actual;
         break;
       }
     }
