@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, createContext, useContext } from "react";
+import { translitRuToEn } from "../../../utils/keyboardTranslit";
 
 export type AvailabilityFilters = {
   serverEnabled: boolean;
@@ -102,8 +103,11 @@ export function SearchBox({
   );
 
   // Update the input immediately, but debounce the (potentially expensive) filtering.
+  // Cyrillic typed on a Russian layout is transliterated to QWERTY so the user doesn't
+  // have to switch keyboard language to search the English-only API.
   const handleChange = useCallback(
-    (query: string) => {
+    (rawQuery: string) => {
+      const query = translitRuToEn(rawQuery);
       setSearch(query);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => commitSearch(query), 180);
@@ -127,6 +131,12 @@ export function SearchBox({
   );
 
   const ref = useCtrlFHook<HTMLInputElement>();
+
+  // Auto-focus the search input once the island hydrates so the user can start
+  // typing immediately. preventScroll avoids the page jumping to the input.
+  useEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+  }, []);
 
   return (
     <div

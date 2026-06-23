@@ -15,8 +15,10 @@ const heroMap = heroMapData as Record<string, string>;
 const allModifiers: string[] = Object.values(modifiersData as Record<string, string[]>).flat();
 
 function getBaseUrl(): string {
-  if (typeof document === "undefined") return "/";
-  return document.querySelector("base")?.getAttribute("href") || "/";
+  // import.meta.env.BASE_URL is the configured base ("/moddota.github.io/"), statically
+  // replaced by Vite, so it is correct during island SSR and on the client alike. Reading
+  // the DOM <base> is empty during SSR and would emit base-less /images URLs the router rejects.
+  return import.meta.env.BASE_URL;
 }
 
 function findModifiers(abilityName: string): string[] {
@@ -56,7 +58,7 @@ interface AbilityEntry {
 
 const specialCategories = ["items", "talents", "generic", "seasonal", "other"];
 
-const allAbilities: AbilityEntry[] = Object.entries(abilities)
+export const allAbilities: AbilityEntry[] = Object.entries(abilities)
   .map(([name, kv]) => {
     let category: string;
     if (name.startsWith("special_bonus_")) category = "talents";
@@ -215,7 +217,7 @@ function kvToText(obj: KVValue, indent: number = 0): string {
 
 // --- Ability Item ---
 
-function AbilityItem({ ability }: { ability: AbilityEntry }) {
+export function AbilityItem({ ability }: { ability: AbilityEntry }) {
   const [expanded, setExpanded] = useState(false);
   const kv = ability.kv;
   const isItem = ability.name.startsWith("item_");
@@ -341,9 +343,14 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
 
           {/* KV data */}
           {typeof kv === "object" && (() => {
+            // Keys rendered as their own collapsible-style KV block (raw KV text + copy),
+            // the way AbilityValues is — instead of inline flat rows.
+            const blockKeys = new Set(["AbilityValues", "ItemRequirements"]);
+            const isBlock = ([key, value]: [string, KVValue]) =>
+              blockKeys.has(key) && typeof value === "object" && value !== null;
             const entries = Object.entries(kv);
-            const abilityValues = entries.filter(([key]) => key === "AbilityValues");
-            const rest = entries.filter(([key]) => key !== "AbilityValues");
+            const blocks = entries.filter(isBlock);
+            const rest = entries.filter((entry) => !isBlock(entry));
             return (
               <div style={{ marginTop: 6, overflowX: "auto" }}>
                 {rest.map(([k, v]) => (
@@ -358,7 +365,7 @@ function AbilityItem({ ability }: { ability: AbilityEntry }) {
                     <KVValueRenderer value={v} depth={0} />
                   </div>
                 ))}
-                {abilityValues.map(([key, value]) => (
+                {blocks.map(([key, value]) => (
                   <div key={key} style={{ marginTop: 4 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                       <span style={{ color: "var(--color-text-faded)", fontWeight: 500, fontFamily: "monospace", fontSize: 12 }}>

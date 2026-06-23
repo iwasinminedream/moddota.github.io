@@ -29,6 +29,7 @@ export function NavBar() {
     : "/moddota.github.io/";
 
   const links = [
+    { href: `${base}api/search`, label: "all search (test)" },
     { href: `${base}api/vscripts`, label: "Lua API" },
     { href: `${base}api/events`, label: "Game Events" },
     { href: `${base}api/panorama/api`, label: "Panorama API" },

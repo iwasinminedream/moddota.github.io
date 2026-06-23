@@ -13,7 +13,7 @@ const flagFilters = [
   { key: "a", label: "Archive (a)" }, { key: "cmd", label: "Commands" },
 ];
 
-const allConvars = Object.entries(convars)
+export const allConvars = Object.entries(convars)
   .map(([name, data]) => ({ name, default: data.default, flags: data.flags, description: data.description }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -30,7 +30,7 @@ const flagColors: Record<string, { bg: string; color: string }> = {
 
 type ConvarEntry = { name: string; default: string; flags: string[]; description: string };
 
-function renderItem(convar: ConvarEntry, style?: React.CSSProperties) {
+export function renderItem(convar: ConvarEntry, style?: React.CSSProperties) {
   return (
     <div style={{ padding: 6, ...style }} key={convar.name}>
       <div style={{ backgroundColor: "var(--color-group)", border: "1px solid var(--color-group-border)", borderRadius: 4, boxShadow: "2px 2px 6px var(--color-group-shadow)", padding: "6px 10px" }}>

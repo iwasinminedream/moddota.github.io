@@ -11,7 +11,7 @@ const categories = Object.entries(modifiers)
   .map(([name, items]) => ({ name, count: items.length, isHero: !specialCategories.includes(name) }))
   .sort((a, b) => { if (a.isHero !== b.isHero) return a.isHero ? 1 : -1; return a.name.localeCompare(b.name); });
 
-const allModifiers = Object.entries(modifiers)
+export const allModifiers = Object.entries(modifiers)
   .flatMap(([category, names]) => names.map((name) => ({ name, category })))
   .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -24,7 +24,7 @@ function formatCategoryName(name: string): string {
   return name.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-function renderItem(modifier: { name: string; category: string }, style?: React.CSSProperties) {
+export function renderItem(modifier: { name: string; category: string }, style?: React.CSSProperties) {
   return (
     <div style={{ padding: 6, ...style }} key={`${modifier.category}-${modifier.name}`}>
       <div style={{ backgroundColor: "var(--color-group)", border: "1px solid var(--color-group-border)", borderRadius: 4, boxShadow: "2px 2px 6px var(--color-group-shadow)", padding: "6px 10px" }}>
@@ -54,7 +54,9 @@ export function ModifiersPage() {
   }, [search, selectedCategory]);
 
   const isSearching = !!search || !!selectedCategory;
-  const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
+  // Use the statically-replaced configured base so hero-icon <img> SSR with the right
+  // /moddota.github.io/ prefix (DOM <base> is empty during island SSR).
+  const base = import.meta.env.BASE_URL;
 
   return (
     <>

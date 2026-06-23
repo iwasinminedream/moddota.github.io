@@ -475,6 +475,10 @@ export function LocalizationPage() {
   }, [blocks]);
 
   const searchRef = useCtrlFHook<HTMLInputElement>();
+  // Auto-focus the search input on mount so the user can type immediately.
+  useEffect(() => {
+    searchRef.current?.focus({ preventScroll: true });
+  }, []);
   const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
 
   return (
