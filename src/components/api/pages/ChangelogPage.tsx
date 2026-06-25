@@ -153,6 +153,7 @@ function getChangedGroupKey(item: { type?: string; class?: string; enum?: string
   if (item.type === "enum_member") return item.enum || "Enums";
   if (item.type === "ability") return "__abilities__";
   if (item.type === "unit") return "__units__";
+  if (item.type === "modifier_property") return "__modifier_properties__";
   if (item.type === "localization") return "__localization__";
   return item.type || "Other";
 }
@@ -175,6 +176,7 @@ function getGroupLabel(key: string): string {
     __abilities__: "Abilities",
     __units__: "Units",
     __kv_properties__: "KV Properties",
+    __modifier_properties__: "Modifier Properties",
     __localization__: "Strings",
   };
   return labels[key] || key;
@@ -361,6 +363,26 @@ function renderKvChangesInline(changes: Record<string, any>): React.ReactNode {
 function renderChangedItem(item: ChangedItem): React.ReactNode {
   const isAbilityOrUnit = item.type === "ability" || item.type === "unit";
   const nameColor = item.type === "ability" ? "#d97706" : item.type === "unit" ? "#0891b2" : "var(--color-highlight)";
+
+  // Modifier-property availability flips render inline, e.g.
+  //   MODIFIER_PROPERTY_MOVESPEED_MAX_BONUS_CONSTANT: true -> false
+  // Colour follows the value, not the position: true is always green, false red.
+  if (item.type === "modifier_property") {
+    const v = (item.changes?.value ?? {}) as { old?: unknown; new?: unknown };
+    const valueColor = (val: unknown) => (String(val) === "true" ? "#10b981" : "#ef4444");
+    return (
+      <div
+        className="changelog-changed-item"
+        style={{ fontFamily: "monospace", fontSize: 13, padding: "2px 6px" }}
+      >
+        <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{item.name}</span>
+        <span style={{ color: "var(--color-text-faded, #999)" }}>: </span>
+        <span style={{ color: valueColor(v.old), fontWeight: 600 }}>{String(v.old)}</span>
+        <span style={kvStyles.arrow}>-&gt;</span>
+        <span style={{ color: valueColor(v.new), fontWeight: 600 }}>{String(v.new)}</span>
+      </div>
+    );
+  }
 
   if (isAbilityOrUnit) {
     return (
