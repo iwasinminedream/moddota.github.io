@@ -9,11 +9,13 @@ export const panoramaEventsScope: DeclarationsContextType = {
       name: name,
       description: event.description,
       isStarred: false,
-      args: event.args.map((arg) => ({
-        name: arg.name,
+      args: event.args.map((arg, index) => ({
+        name: arg.name ?? `arg${index + 1}`,
         types: [arg.type],
       })),
       returns: ["void"],
+      example: event.example,
+      exampleSource: event.exampleSource,
     }))
     .sort((a, b) => a.name.localeCompare(b.name)),
 };

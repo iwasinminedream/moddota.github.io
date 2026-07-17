@@ -2,7 +2,7 @@ import * as api from "./api";
 import apiTypes from "@moddota/dota-data/files/vscripts/api-types";
 import React from "react";
 import { ElementLink, KindIcon, useLinkedElement } from "./utils/components";
-import { CommonGroupWrapper, CommonGroupHeader, CommonGroupSignature, ElementBadges } from "./utils/styles";
+import { CommonGroupWrapper, CommonGroupHeader, CommonGroupSignature, ElementBadges, OptionalDescription } from "./utils/styles";
 import { Types } from "./types";
 
 export const Field: React.FC<{
@@ -21,6 +21,7 @@ export const Field: React.FC<{
         </CommonGroupSignature>
         <ElementBadges>{context && <ElementLink scope={context} hash={element.name} />}</ElementBadges>
       </CommonGroupHeader>
+      <OptionalDescription description={"description" in element ? element.description : undefined} />
     </CommonGroupWrapper>
   );
 };

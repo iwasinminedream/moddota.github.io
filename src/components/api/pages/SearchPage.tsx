@@ -4,6 +4,7 @@ import { eventsScope } from "../../../data/events-data";
 import { panoramaScope } from "../../../data/panorama-api-data";
 import { panoramaCssScope } from "../../../data/panorama-css-data";
 import { panoramaEventsScope } from "../../../data/panorama-events-data";
+import { panoramaPanelsScope } from "../../../data/panorama-panels-data";
 import { fuzzyMatch } from "../../../utils/fuzzySearch";
 import { ScrollableList } from "../Lists";
 import { SearchBox, getSearchFromUrl, subscribeToSearchChange } from "../Search";
@@ -11,6 +12,7 @@ import { NavBar } from "../layout/NavBar";
 import { DeclarationsContext, type DeclarationsContextType } from "../Docs/DeclarationsContext";
 import { ClassDeclaration } from "../Docs/ClassDeclaration";
 import { FunctionDeclaration } from "../Docs/FunctionDeclaration";
+import { Field } from "../Docs/Field";
 import { Enum } from "../Docs/Enum";
 import { Constant } from "../Docs/Constant";
 import { CssProperty } from "../Docs/CssProperty";
@@ -20,7 +22,7 @@ import { allModifiers, renderItem as renderModifierItem } from "./ModifiersPage"
 
 // ─── Sources ──────────────────────────────────────────────────────────────────
 
-type DeclScopeKey = "lua" | "event" | "panoramaApi" | "panoramaCss" | "panoramaEvent";
+type DeclScopeKey = "lua" | "event" | "panoramaApi" | "panoramaCss" | "panoramaEvent" | "panoramaPanel";
 type SourceKey = DeclScopeKey | "ability" | "modifier" | "convar";
 
 interface SourceMeta {
@@ -34,6 +36,7 @@ const SOURCES: Record<SourceKey, SourceMeta> = {
   panoramaApi: { label: "Panorama API", color: "#5b82ee" },
   panoramaCss: { label: "Panorama CSS", color: "#c084fc" },
   panoramaEvent: { label: "Panorama Event", color: "#3aa0c0" },
+  panoramaPanel: { label: "Panorama Panel", color: "#2fa87f" },
   ability: { label: "Ability", color: "#d97706" },
   modifier: { label: "Modifier", color: "#10b981" },
   convar: { label: "Convar", color: "#ef6b6b" },
@@ -47,6 +50,7 @@ const DECL_SCOPES: Record<DeclScopeKey, DeclarationsContextType> = {
   panoramaApi: panoramaScope,
   panoramaCss: panoramaCssScope,
   panoramaEvent: panoramaEventsScope,
+  panoramaPanel: panoramaPanelsScope,
 };
 
 // Each result is rendered with its own page's card; keep enough info to do that.
@@ -65,10 +69,10 @@ function pushDeclScope(out: Entry[], scopeKey: DeclScopeKey, source: SourceKey) 
     if (d.kind === "class") {
       // Class header on its own (members emptied so the card stays compact)…
       out.push({ source, name: d.name, kind: "decl", scopeKey, decl: { ...d, members: [] } });
-      // …plus every method as its own searchable result, rendered like on the page.
+      // …plus every method/field as its own searchable result, rendered like on the page.
       if (Array.isArray(d.members)) {
         for (const m of d.members) {
-          if (m?.kind === "function" && m.name) {
+          if ((m?.kind === "function" || m?.kind === "field") && m.name) {
             out.push({ source, name: m.name, kind: "decl", scopeKey, decl: m, context: d.name });
           }
         }
@@ -106,6 +110,7 @@ const ENTRIES: Entry[] = (() => {
   pushDeclScope(out, "panoramaApi", "panoramaApi");
   pushDeclScope(out, "panoramaCss", "panoramaCss");
   pushDeclScope(out, "panoramaEvent", "panoramaEvent");
+  pushDeclScope(out, "panoramaPanel", "panoramaPanel");
   for (const a of allAbilities) out.push({ source: "ability", name: a.name, kind: "ability", ability: a });
   for (const m of allModifiers) out.push({ source: "modifier", name: m.name, kind: "modifier", modifier: m });
   for (const c of allConvars) out.push({ source: "convar", name: c.name, kind: "convar", convar: c });
@@ -167,6 +172,9 @@ function renderEntry(entry: Entry): React.ReactNode {
           break;
         case "function":
           inner = <FunctionDeclaration declaration={d} context={entry.context} />;
+          break;
+        case "field":
+          inner = <Field element={d} context={entry.context} />;
           break;
         case "cssProperty":
           inner = <CssProperty element={d} />;

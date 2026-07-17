@@ -35,6 +35,7 @@ export function NavBar() {
     { href: `${base}api/panorama/api`, label: "Panorama API" },
     { href: `${base}api/panorama/css`, label: "Panorama CSS" },
     { href: `${base}api/panorama/events`, label: "Panorama Events" },
+    { href: `${base}api/panorama/panels`, label: "Panorama Panels" },
     { href: `${base}api/abilities`, label: "Abilities" },
     { href: `${base}api/modifiers`, label: "Modifiers" },
     { href: `${base}api/convars`, label: "Convars" },

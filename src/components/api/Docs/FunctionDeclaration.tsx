@@ -82,6 +82,28 @@ export const FunctionDeclaration: React.FC<{
           )
         }
       />
+      {declaration.example && (
+        <div style={{ margin: "6px 0 4px 28px", fontSize: 13 }}>
+          <code
+            style={{
+              display: "inline-block",
+              padding: "4px 8px",
+              borderRadius: 3,
+              backgroundColor: "var(--color-group-members)",
+              border: "1px solid var(--color-group-border)",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {declaration.example}
+          </code>
+          {declaration.exampleSource && (
+            <div style={{ marginTop: 2, color: "var(--color-text-dim)", fontSize: 11 }}>
+              from {declaration.exampleSource}
+            </div>
+          )}
+        </div>
+      )}
     </CommonGroupWrapper>
   );
 };

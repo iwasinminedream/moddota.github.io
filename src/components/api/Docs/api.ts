@@ -36,6 +36,10 @@ export interface FunctionDeclaration extends FunctionType {
   available?: Availability;
   description?: string;
   deprecated?: string;
+  /** Real usage example (e.g. quoted from Valve's UI code for panorama events). */
+  example?: string;
+  /** Source file the example is quoted from. */
+  exampleSource?: string;
 }
 
 export interface Field {

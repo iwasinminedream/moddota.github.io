@@ -1,5 +1,5 @@
 import * as api from "./api";
-import React from "react";
+import React, { useContext } from "react";
 import { Field } from "./Field";
 import { FunctionDeclaration } from "./FunctionDeclaration";
 import { ElementLink, KindIcon, useLinkedElement } from "./utils/components";
@@ -7,6 +7,7 @@ import { CommonGroupWrapper, CommonGroupHeader, CommonGroupSignature, CommonGrou
 import { Types } from "./types";
 import { AvailabilityBadge } from "./AvailabilityBadge";
 import { ReferencesLink } from "./ReferencesLink";
+import { DeclarationsContext } from "./DeclarationsContext";
 
 export const ClassDeclaration: React.FC<{
   className?: string;
@@ -14,6 +15,10 @@ export const ClassDeclaration: React.FC<{
   declaration: api.ClassDeclaration;
 }> = ({ className, style, declaration }) => {
   const isLinked = useLinkedElement({ scope: declaration.name });
+  // Server/client availability and Lua references only make sense for VScripts
+  // classes, not for panorama interfaces/panels.
+  const { root } = useContext(DeclarationsContext);
+  const isPanorama = root.includes("/panorama");
   return (
   <CommonGroupWrapper className={className} style={style} id={declaration.name} isLinked={isLinked}>
     <CommonGroupHeader style={{ padding: 5 }}>
@@ -28,8 +33,8 @@ export const ClassDeclaration: React.FC<{
         )}
       </CommonGroupSignature>
       <ElementBadges>
-        <ReferencesLink name={declaration.name} />
-        <AvailabilityBadge available={declaration.clientName != null ? "both" : "server"} />
+        {!isPanorama && <ReferencesLink name={declaration.name} />}
+        {!isPanorama && <AvailabilityBadge available={declaration.clientName != null ? "both" : "server"} />}
         <ElementLink scope={declaration.name} hash={declaration.name} />
       </ElementBadges>
     </CommonGroupHeader>
