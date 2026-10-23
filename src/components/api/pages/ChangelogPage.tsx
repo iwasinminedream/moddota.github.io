@@ -39,6 +39,9 @@ interface ChangelogEntry {
   commitSha?: string;
   commitDate?: string;
   changes: Record<string, CategoryChanges>;
+  // Changes to dota-data made after this version's dump: corrected typings and
+  // descriptions, not changes in the game.
+  documentation?: Record<string, CategoryChanges>;
 }
 
 interface IndexEntry {
@@ -48,6 +51,7 @@ interface IndexEntry {
   addedCount?: number;
   removedCount?: number;
   changedCount?: number;
+  documentationCount?: number;
 }
 
 // ─── Data loading ───────────────────────────────────────────────────────────────
@@ -128,10 +132,15 @@ const diffFieldLabels: Record<string, string> = {
   value: "Value",
   description: "Description",
   signature: "Signature",
+  argDescriptions: "Arguments",
 };
+
+const typeKinds = new Set(["object", "nominal", "primitive"]);
 
 function getGroupKey(item: { type?: string; class?: string; enum?: string; category?: string }): string {
   if (item.type === "method" || item.type === "function") return item.class || "Global Functions";
+  if (item.type === "type_field") return item.class || "Types";
+  if (item.type && typeKinds.has(item.type)) return "__types__";
   if (item.type === "enum_member") return item.enum || "Enums";
   if (item.type === "constant" || item.type === "const") return item.class || "Constants";
   if (item.type === "class") return "__classes__";
@@ -150,6 +159,8 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
 
 function getChangedGroupKey(item: { type?: string; class?: string; enum?: string }): string {
   if (item.type === "method" || item.type === "function") return item.class || "Global Functions";
+  if (item.type === "type_field") return item.class || "Types";
+  if (item.type && typeKinds.has(item.type)) return "__types__";
   if (item.type === "enum_member") return item.enum || "Enums";
   if (item.type === "ability") return "__abilities__";
   if (item.type === "unit") return "__units__";
@@ -178,6 +189,7 @@ function getGroupLabel(key: string): string {
     __kv_properties__: "KV Properties",
     __modifier_properties__: "Modifier Properties",
     __localization__: "Strings",
+    __types__: "Types",
   };
   return labels[key] || key;
 }
@@ -255,6 +267,16 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
       </>
     );
   }
+  if (item.type === "type_field") {
+    return (
+      <>
+        <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{item.signature || item.name}</span>
+        {item.description && (
+          <span style={{ color: "var(--color-text-dim, #888)", fontSize: 12, whiteSpace: "pre-wrap" }}> &mdash; {item.description}</span>
+        )}
+      </>
+    );
+  }
   if (item.type === "ability") return <span style={{ fontWeight: 600, color: "#d97706" }}>{item.name}</span>;
   if (item.type === "unit") return <span style={{ fontWeight: 600, color: "#0891b2" }}>{item.name}</span>;
   if (item.type === "kv_property") return <span style={{ fontWeight: 600, color: "#7c3aed" }}>{item.name}</span>;
@@ -295,12 +317,12 @@ const kvStyles = {
   diffOld: {
     fontFamily: "monospace", fontSize: 12, margin: "1px 0", padding: "2px 8px",
     borderRadius: 3, backgroundColor: "rgba(239, 68, 68, 0.1)", color: "var(--color-text)",
-    borderLeft: "3px solid #ef4444",
+    borderLeft: "3px solid #ef4444", whiteSpace: "pre-wrap",
   } as React.CSSProperties,
   diffNew: {
     fontFamily: "monospace", fontSize: 12, margin: "1px 0", padding: "2px 8px",
     borderRadius: 3, backgroundColor: "rgba(16, 185, 129, 0.1)", color: "var(--color-text)",
-    borderLeft: "3px solid #10b981",
+    borderLeft: "3px solid #10b981", whiteSpace: "pre-wrap",
   } as React.CSSProperties,
 };
 
@@ -492,14 +514,16 @@ function CategorySubBlock({
   sectionType,
   collapsedKeys,
   toggleKey,
+  keyPrefix = "",
 }: {
   categoryName: string;
   items: (ChangeItem | ChangedItem)[];
   sectionType: SectionType;
   collapsedKeys: Set<string>;
   toggleKey: (key: string) => void;
+  keyPrefix?: string;
 }) {
-  const catKey = `${sectionType}-cat-${categoryName}`;
+  const catKey = `${keyPrefix}${sectionType}-cat-${categoryName}`;
   const isCatCollapsed = collapsedKeys.has(catKey);
 
   const groupedEntries = useMemo(() => {
@@ -546,7 +570,7 @@ function CategorySubBlock({
               sectionType={sectionType}
               collapsedKeys={collapsedKeys}
               toggleKey={toggleKey}
-              collapsePrefix={`${sectionType}-${categoryName}`}
+              collapsePrefix={`${keyPrefix}${sectionType}-${categoryName}`}
             />
           ))}
         </div>
@@ -562,16 +586,18 @@ function TopSection({
   categories,
   collapsedKeys,
   toggleKey,
+  keyPrefix = "",
 }: {
   sectionType: SectionType;
   categories: { category: string; items: (ChangeItem | ChangedItem)[] }[];
   collapsedKeys: Set<string>;
   toggleKey: (key: string) => void;
+  keyPrefix?: string;
 }) {
   if (categories.length === 0) return null;
 
   const totalItems = categories.reduce((sum, c) => sum + c.items.length, 0);
-  const topKey = `top-${sectionType}`;
+  const topKey = `${keyPrefix}top-${sectionType}`;
   const isCollapsed = collapsedKeys.has(topKey);
   const cfg = sectionConfig[sectionType];
 
@@ -614,6 +640,82 @@ function TopSection({
               sectionType={sectionType}
               collapsedKeys={collapsedKeys}
               toggleKey={toggleKey}
+              keyPrefix={keyPrefix}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Documentation block ────────────────────────────────────────────────────────
+
+const DOCS_COLOR = "#3b82f6";
+const DOCS_KEY_PREFIX = "doc-";
+
+function DocumentationBlock({
+  sections,
+  collapsedKeys,
+  toggleKey,
+}: {
+  sections: ReturnType<typeof aggregateBySection>;
+  collapsedKeys: Set<string>;
+  toggleKey: (key: string) => void;
+}) {
+  const totalItems = (["changed", "added", "removed"] as SectionType[]).reduce(
+    (sum, t) => sum + sections[t].reduce((s, c) => s + c.items.length, 0),
+    0,
+  );
+  if (totalItems === 0) return null;
+
+  const blockKey = `${DOCS_KEY_PREFIX}block`;
+  const isCollapsed = collapsedKeys.has(blockKey);
+
+  return (
+    <div style={{
+      borderRadius: 6, overflow: "hidden", marginBottom: 10,
+      border: `1px solid color-mix(in srgb, ${DOCS_COLOR} 30%, transparent)`,
+      backgroundColor: `color-mix(in srgb, ${DOCS_COLOR} 5%, transparent)`,
+    }}>
+      <div
+        className="changelog-top-section-header"
+        onClick={() => toggleKey(blockKey)}
+        style={{
+          display: "flex", alignItems: "center", padding: "10px 14px",
+          cursor: "pointer", userSelect: "none", gap: 10,
+        }}
+      >
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 28, height: 28, borderRadius: 6, fontWeight: 800, fontSize: 16,
+          color: "white", backgroundColor: DOCS_COLOR, flexShrink: 0,
+        }}>&#9998;</span>
+        <span style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)" }}>Documentation</span>
+          <span style={{ fontSize: 12, color: "var(--color-text-faded, #999)" }}>
+            Typings and descriptions corrected in dota-data after this version's dump. Not changes in the game.
+          </span>
+        </span>
+        <span style={{ fontSize: 13, color: "var(--color-text-faded, #999)", marginLeft: "auto" }}>
+          {totalItems} items
+        </span>
+        <span style={{
+          fontSize: 10, color: "var(--color-text-faded, #999)",
+          transition: "transform 0.2s", display: "inline-block",
+          transform: isCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
+        }}>&#9660;</span>
+      </div>
+      {!isCollapsed && (
+        <div style={{ padding: "0 10px 0 10px" }}>
+          {(["changed", "added", "removed"] as SectionType[]).map((t) => (
+            <TopSection
+              key={t}
+              sectionType={t}
+              categories={sections[t]}
+              collapsedKeys={collapsedKeys}
+              toggleKey={toggleKey}
+              keyPrefix={DOCS_KEY_PREFIX}
             />
           ))}
         </div>
@@ -626,9 +728,12 @@ function TopSection({
 
 function VersionContent({ entry }: { entry: ChangelogEntry }) {
   const sections = useMemo(() => aggregateBySection(entry.changes), [entry]);
+  const docsSections = useMemo(() => aggregateBySection(entry.documentation ?? {}), [entry]);
 
   const hasAny =
     sections.changed.length > 0 || sections.added.length > 0 || sections.removed.length > 0;
+  const hasDocs =
+    docsSections.changed.length > 0 || docsSections.added.length > 0 || docsSections.removed.length > 0;
 
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set());
 
@@ -662,19 +767,26 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
     setCollapsedKeys(autoCollapse);
   }, [entry]);
 
-  if (!hasAny) {
-    return (
-      <div style={{ color: "var(--color-text-faded, #999)", fontStyle: "italic", padding: 40, textAlign: "center" }}>
-        No API changes detected in this version
-      </div>
-    );
-  }
+  const noChanges = (
+    <div style={{ color: "var(--color-text-faded, #999)", fontStyle: "italic", padding: hasDocs ? 16 : 40, textAlign: "center" }}>
+      No API changes detected in this version
+    </div>
+  );
+
+  if (!hasAny && !hasDocs) return noChanges;
 
   return (
     <div style={{ padding: "0 6px" }}>
-      <TopSection sectionType="changed" categories={sections.changed} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
-      <TopSection sectionType="added" categories={sections.added} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
-      <TopSection sectionType="removed" categories={sections.removed} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
+      {hasAny ? (
+        <>
+          <TopSection sectionType="changed" categories={sections.changed} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
+          <TopSection sectionType="added" categories={sections.added} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
+          <TopSection sectionType="removed" categories={sections.removed} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
+        </>
+      ) : (
+        noChanges
+      )}
+      <DocumentationBlock sections={docsSections} collapsedKeys={collapsedKeys} toggleKey={toggleKey} />
     </div>
   );
 }
@@ -894,6 +1006,11 @@ export function ChangelogPage() {
                   {entry.changedCount ? <span style={{ color: "#f59e0b", marginLeft: 4 }}>~{entry.changedCount}</span> : null}
                 </span>
               )}
+              {entry.documentationCount ? (
+                <span title="Documentation updates" style={{ fontSize: 11, marginLeft: 6, color: DOCS_COLOR }}>
+                  &#9998;{entry.documentationCount}
+                </span>
+              ) : null}
             </a>
           ))}
         </div>

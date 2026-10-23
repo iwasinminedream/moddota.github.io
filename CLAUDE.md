@@ -292,7 +292,7 @@ Or via class-based CSS:
 
 ### Changelog Data
 
-Changelog data is fetched at runtime from `/changelog-data/...` URLs. In dev, an Astro middleware (`astro.config.mjs`) serves these from sibling `dota-data/files/`. In production they're available from the same path on the deployed site (likely served from public/ or by a build step — verify in deploy.yml when adding new versions).
+Changelog data is fetched at runtime (`ChangelogPage.tsx`, `CHANGELOG_BASE`). In dev, an Astro middleware (`astro.config.mjs`) serves `/changelog-data/...` from sibling `dota-data/files/`; in production the page reads `https://raw.githubusercontent.com/iwasinminedream/dota-data/master/files`, so pushed changelog data is live without a site rebuild (only the version routes from `changelog-index.json` need one). A version entry has `changes` (game changes) and optional `documentation` (dota-data fixes after that version's dump, rendered as a separate "Documentation" block; `documentationCount` in the index).
 
 ---
 
