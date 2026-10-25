@@ -15,7 +15,7 @@
 - **Theming**: CSS custom properties (`--color-*`) in `src/styles/global.css`, toggled via `data-theme="dark"` attribute on `<html>`, persisted in `localStorage`. Never hardcode colors.
 - **Data source**: All API data comes from `@moddota/dota-data`; the `prebuild` script copies `files/` and `lib/` from a sibling `dota-data/` directory into `node_modules/@moddota/dota-data/`
 - **React islands**: API interactive components use `client:load` – they hydrate immediately on page load
-- **Routing**: Astro file-based routing, clean URLs (no hash router)
+- **Routing**: Astro file-based routing, clean URLs (no hash router). Deep links under `/api/<section>/…` have no built page: `src/pages/404.astro` (GitHub Pages' 404) sends them to the section page and `ApiLayout.astro` restores the URL; the section list is taken from the files in `src/pages/api/`. Old `/api/#!/…` links are redirected by `src/pages/api/index.astro`
 
 ---
 
@@ -112,6 +112,7 @@ moddota.github.io-1/
 │   │   └── types.tsx                 # isNotNil, intersperse, assertNever
 │   ├── plugins/
 │   │   ├── remark-components.mjs     # Converts <YouTube>, <Gfycat>, <StaticVideo> tags in markdown to iframes
+│   │   ├── remark-base-links.mjs     # Adds the base to `/…` URLs, resolves relative article links, `{#id}` headings
 │   │   └── remark-remove.mjs         # Strips lines marked with @remove-next-line / @remove-line
 │   └── styles/
 │       └── global.css                # Tailwind import + theme custom properties (light/dark)
@@ -294,6 +295,10 @@ Or via class-based CSS:
 
 Changelog data is fetched at runtime (`ChangelogPage.tsx`, `CHANGELOG_BASE`). In dev, an Astro middleware (`astro.config.mjs`) serves `/changelog-data/...` from sibling `dota-data/files/`; in production the page reads `https://raw.githubusercontent.com/iwasinminedream/dota-data/master/files`, so pushed changelog data is live without a site rebuild (only the version routes from `changelog-index.json` need one). A version entry has `changes` (game changes) and optional `documentation` (dota-data fixes after that version's dump, rendered as a separate "Documentation" block; `documentationCount` in the index).
 
+The "AI analysis" block on a version page is dota-data's update report `reports/<version>.md` (a model's analysis of the API and game-code changes; only recent versions have one, in Russian), fetched the same way (`REPORT_BASE`; dev middleware `/report-data/...` from sibling `dota-data/reports/`), rendered with micromark and collapsed by default. Its relative links are rewritten to the dota-data repo on GitHub.
+
+The Modifiers page fetches `vscripts/native_modifiers.json` the same way (`DATA_BASE` in `ModifiersPage.tsx`, about 2 MB): the modifier functions of every native modifier and the formula each property returns, read from server.dll by dota-data. On the all-search page a modifier card loads it only when opened. `%name%` values in the formulas come from `abilities.json`, fetched once a card is opened. Without the file the cards show only the name. In changelogs these formulas are `modifier_function` items (`modifier_x.MODIFIER_PROPERTY_Y`, the value is the formula), grouped by modifier.
+
 ---
 
 ## Adding Features Checklist
@@ -305,4 +310,4 @@ Changelog data is fetched at runtime (`ChangelogPage.tsx`, `CHANGELOG_BASE`). In
 5. **New theme tokens** → Add CSS variables to both light (`:root`, `@media (prefers-color-scheme: light)`) and dark (`[data-theme="dark"]`) sections in `src/styles/global.css`.
 6. **New article** → Create `.md` (or `.mdx`) file in `src/content/articles/` with frontmatter. Add an entry to `src/data/sidebar.ts` for navigation.
 7. **New article component** → Add a `.astro` component in `src/components/articles/`. To make it usable in plain markdown (without MDX import), also wire it through `src/plugins/remark-components.mjs`.
-8. **New static asset** → Drop into `public/`. References use `/images/...` (Astro automatically prepends the base path in production).
+8. **New static asset** → Drop into `public/`. In markdown, reference it as `/images/...` (`remark-base-links` adds the base path); in components, prefix `import.meta.env.BASE_URL`.

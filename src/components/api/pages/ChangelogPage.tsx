@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { micromark } from "micromark";
+import { gfm, gfmHtml } from "micromark-extension-gfm";
 import { NavBar } from "../layout/NavBar";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -90,6 +92,27 @@ async function loadChangelogVersion(version: string): Promise<ChangelogEntry | n
   }
 }
 
+// Update reports written by dota-data's automation (`reports/<version>.md`): a model's
+// analysis of the API and game-code changes. Only recent versions have one.
+const REPORT_BASE = isDev
+  ? "/report-data"
+  : "https://raw.githubusercontent.com/iwasinminedream/dota-data/master/reports";
+const REPORT_REPO_URL = "https://github.com/iwasinminedream/dota-data/blob/master/reports/";
+
+const reportCache = new Map<string, string | null>();
+
+async function loadReport(version: string): Promise<string | null> {
+  if (reportCache.has(version)) return reportCache.get(version)!;
+  try {
+    const response = await fetch(`${REPORT_BASE}/${version}.md`);
+    const text = response.ok ? await response.text() : null;
+    reportCache.set(version, text);
+    return text;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Section type definitions ───────────────────────────────────────────────────
 
 type SectionType = "changed" | "added" | "removed";
@@ -115,6 +138,7 @@ const categoryOrder = [
   "Panorama CSS",
   "Console Variables",
   "Modifiers",
+  "Native Modifier Functions",
   "Properties Fixed",
   "Lua Types",
   "Localization",
@@ -137,7 +161,16 @@ const diffFieldLabels: Record<string, string> = {
 
 const typeKinds = new Set(["object", "nominal", "primitive"]);
 
-function getGroupKey(item: { type?: string; class?: string; enum?: string; category?: string }): string {
+// A function or CheckState state of a native modifier (`modifier_function`, `modifier_state`):
+// `modifier_x.MODIFIER_PROPERTY_Y` -> ["modifier_x", "MODIFIER_PROPERTY_Y"].
+const nativeModifierTypes = new Set(["modifier_function", "modifier_state"]);
+
+function splitModifierFunction(name = ""): [string, string] {
+  const dot = name.lastIndexOf(".");
+  return dot === -1 ? ["Native Modifiers", name] : [name.slice(0, dot), name.slice(dot + 1)];
+}
+
+function getGroupKey(item: { type?: string; name?: string; class?: string; enum?: string; category?: string }): string {
   if (item.type === "method" || item.type === "function") return item.class || "Global Functions";
   if (item.type === "type_field") return item.class || "Types";
   if (item.type && typeKinds.has(item.type)) return "__types__";
@@ -152,12 +185,13 @@ function getGroupKey(item: { type?: string; class?: string; enum?: string; categ
   if (item.type === "kv_property") return "__kv_properties__";
   if (item.type === "modifier") return item.category || "Modifiers";
   if (item.type === "modifier_property") return "__modifier_properties__";
+  if (item.type && nativeModifierTypes.has(item.type)) return splitModifierFunction(item.name)[0];
   if (item.type === "localization") return "__localization__";
   if (item.type === "property") return item.class || "Properties";
   return item.type || "Other";
 }
 
-function getChangedGroupKey(item: { type?: string; class?: string; enum?: string }): string {
+function getChangedGroupKey(item: { type?: string; name?: string; class?: string; enum?: string }): string {
   if (item.type === "method" || item.type === "function") return item.class || "Global Functions";
   if (item.type === "type_field") return item.class || "Types";
   if (item.type && typeKinds.has(item.type)) return "__types__";
@@ -165,6 +199,7 @@ function getChangedGroupKey(item: { type?: string; class?: string; enum?: string
   if (item.type === "ability") return "__abilities__";
   if (item.type === "unit") return "__units__";
   if (item.type === "modifier_property") return "__modifier_properties__";
+  if (item.type && nativeModifierTypes.has(item.type)) return splitModifierFunction(item.name)[0];
   if (item.type === "localization") return "__localization__";
   return item.type || "Other";
 }
@@ -280,6 +315,20 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
   if (item.type === "ability") return <span style={{ fontWeight: 600, color: "#d97706" }}>{item.name}</span>;
   if (item.type === "unit") return <span style={{ fontWeight: 600, color: "#0891b2" }}>{item.name}</span>;
   if (item.type === "kv_property") return <span style={{ fontWeight: 600, color: "#7c3aed" }}>{item.name}</span>;
+  if (item.type && nativeModifierTypes.has(item.type)) {
+    // A function's value is its formula, or the status when there is none ("event", "unresolved");
+    // a state's is `true`, `false` or `true when <condition>`.
+    const formula =
+      item.type !== "modifier_function" ? item.value : item.value === "event" ? undefined : item.value === "unresolved" ? "(unresolved)" : item.value;
+    return (
+      <>
+        <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{splitModifierFunction(item.name)[1]}</span>
+        {formula !== undefined && (
+          <span style={{ color: "var(--color-text-dim, #888)", fontSize: 12, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}> = {formula}</span>
+        )}
+      </>
+    );
+  }
   if (item.type === "localization") {
     return (
       <>
@@ -402,6 +451,26 @@ function renderChangedItem(item: ChangedItem): React.ReactNode {
         <span style={{ color: valueColor(v.old), fontWeight: 600 }}>{String(v.old)}</span>
         <span style={kvStyles.arrow}>-&gt;</span>
         <span style={{ color: valueColor(v.new), fontWeight: 600 }}>{String(v.new)}</span>
+      </div>
+    );
+  }
+
+  // A changed formula or state of a native modifier (the group is the modifier).
+  if (item.type && nativeModifierTypes.has(item.type)) {
+    const v = (item.changes?.value ?? {}) as { old?: unknown; new?: unknown };
+    return (
+      <div className="changelog-changed-item">
+        <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+          <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{splitModifierFunction(item.name)[1]}</span>
+        </div>
+        <div style={{ margin: "2px 0 4px 12px", overflowWrap: "anywhere" }}>
+          <div style={kvStyles.diffOld}>
+            <span style={{ color: "#ef4444", fontWeight: "bold" }}>- </span>{formatKvValue(v.old) || "(empty)"}
+          </div>
+          <div style={kvStyles.diffNew}>
+            <span style={{ color: "#10b981", fontWeight: "bold" }}>+ </span>{formatKvValue(v.new) || "(empty)"}
+          </div>
+        </div>
       </div>
     );
   }
@@ -724,6 +793,144 @@ function DocumentationBlock({
   );
 }
 
+// ─── AI report block ────────────────────────────────────────────────────────────
+
+const REPORT_COLOR = "#a855f7";
+
+const REPORT_TAGS = new Set([
+  "a", "blockquote", "br", "code", "del", "details", "em", "h1", "h2", "h3", "h4", "h5", "h6",
+  "hr", "li", "ol", "p", "pre", "strong", "summary", "table", "tbody", "td", "th", "thead", "tr", "ul",
+]);
+const REPORT_DROPPED_TAGS = new Set(["script", "style", "iframe", "object", "embed", "template", "noscript"]);
+const REPORT_ATTRIBUTES: Record<string, string[]> = { a: ["href"], td: ["align"], th: ["align"], code: ["class"] };
+
+// Markdown → HTML for a report. The reports use raw <details> blocks, so HTML passes
+// through micromark and is then cut down to plain formatting tags. Relative links
+// (`../files/changelogs/N.json`, `N-functions.md`) point into the dota-data repo and
+// would be dead on this site, so they go to GitHub instead.
+function renderReport(markdown: string): string {
+  // The "# Dota N: ..." title repeats the version header above the block.
+  const body = markdown.replace(/^# [^\r\n]*[\r\n]+/, "");
+  const html = micromark(body, { extensions: [gfm()], htmlExtensions: [gfmHtml()], allowDangerousHtml: true });
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
+
+  const clean = (node: Element) => {
+    for (const child of Array.from(node.children)) {
+      const tag = child.tagName.toLowerCase();
+      if (REPORT_DROPPED_TAGS.has(tag)) {
+        child.remove();
+        continue;
+      }
+      clean(child);
+      if (!REPORT_TAGS.has(tag)) {
+        child.replaceWith(...Array.from(child.childNodes));
+        continue;
+      }
+      const allowed = REPORT_ATTRIBUTES[tag] ?? [];
+      for (const attr of Array.from(child.attributes)) {
+        if (!allowed.includes(attr.name)) child.removeAttribute(attr.name);
+      }
+      if (tag === "a") {
+        const href = child.getAttribute("href") ?? "";
+        if (href.startsWith("#")) continue;
+        let url: URL | null = null;
+        try {
+          url = new URL(href, REPORT_REPO_URL);
+        } catch {
+          // Malformed URL: keep the text, drop the link.
+        }
+        if (url && (url.protocol === "https:" || url.protocol === "http:")) {
+          child.setAttribute("href", url.href);
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noopener noreferrer");
+        } else {
+          child.removeAttribute("href");
+        }
+      }
+    }
+  };
+  clean(doc.body);
+  return doc.body.innerHTML;
+}
+
+function ReportBlock({ version }: { version: string }) {
+  const [report, setReport] = useState<string | null>(null);
+  // Collapsed by default, and again after a version switch (the block remounts
+  // while the next version loads).
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReport(null);
+    loadReport(version).then((text) => {
+      if (!cancelled) setReport(text);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [version]);
+
+  const html = useMemo(() => (report && open ? renderReport(report) : ""), [report, open]);
+
+  if (!report) return null;
+
+  return (
+    // flexShrink 0: this sits directly in the scrolling flex column, where overflow:hidden
+    // would otherwise let it shrink to nothing next to a long changelog.
+    <div style={{
+      borderRadius: 6, overflow: "hidden", margin: "0 6px 10px 6px", flexShrink: 0,
+      border: `1px solid color-mix(in srgb, ${REPORT_COLOR} 30%, transparent)`,
+      backgroundColor: `color-mix(in srgb, ${REPORT_COLOR} 5%, transparent)`,
+    }}>
+      <div
+        className="changelog-top-section-header"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "flex", alignItems: "center", padding: "10px 14px",
+          cursor: "pointer", userSelect: "none", gap: 10,
+        }}
+      >
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 28, height: 28, borderRadius: 6, fontWeight: 800, fontSize: 12,
+          color: "white", backgroundColor: REPORT_COLOR, flexShrink: 0,
+        }}>AI</span>
+        <span style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)" }}>AI analysis</span>
+          <span style={{ fontSize: 12, color: "var(--color-text-faded, #999)" }}>
+            What changed in the API and in the game code, written by a neural network from the dump and the
+            game binaries. May contain mistakes. In Russian.
+          </span>
+        </span>
+        <a
+          href={`${REPORT_REPO_URL}${version}.md`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          style={{ fontSize: 13, color: "var(--color-text-faded, #999)", marginLeft: "auto", whiteSpace: "nowrap" }}
+        >
+          GitHub
+        </a>
+        <span style={{
+          fontSize: 10, color: "var(--color-text-faded, #999)",
+          transition: "transform 0.2s", display: "inline-block",
+          transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+        }}>&#9660;</span>
+      </div>
+      {open && (
+        <div
+          className="changelog-report"
+          style={{
+            margin: "0 10px 10px 10px", padding: "4px 14px",
+            backgroundColor: "var(--color-group)", border: "1px solid var(--color-group-border)", borderRadius: 4,
+          }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Version content ────────────────────────────────────────────────────────────
 
 function VersionContent({ entry }: { entry: ChangelogEntry }) {
@@ -922,6 +1129,7 @@ export function ChangelogPage() {
             </p>
           </div>
         </div>
+        <ReportBlock version={currentEntry.version} />
         <VersionContent entry={currentEntry} />
       </>
     );
@@ -978,6 +1186,26 @@ export function ChangelogPage() {
         .changelog-class-group-header:hover { background-color: var(--color-group-highlight, rgba(128,128,128,0.08)); }
         .changelog-item-row:hover { background-color: var(--color-group-highlight, rgba(128,128,128,0.08)); }
         .changelog-changed-item:hover { background-color: var(--color-group-highlight, rgba(128,128,128,0.08)); }
+        .changelog-report { font-size: 14px; line-height: 1.55; color: var(--color-text); overflow-wrap: anywhere; }
+        .changelog-report h2 { font-size: 17px; font-weight: 700; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--color-group-border); }
+        .changelog-report h3 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
+        .changelog-report h4, .changelog-report h5, .changelog-report h6 { font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
+        .changelog-report p { margin: 6px 0; }
+        .changelog-report ul { list-style: disc; margin: 4px 0; padding-left: 22px; }
+        .changelog-report ul ul { list-style: circle; }
+        .changelog-report ol { list-style: decimal; margin: 4px 0; padding-left: 22px; }
+        .changelog-report li { margin: 2px 0; }
+        .changelog-report a { color: var(--color-highlight); text-decoration: underline; }
+        .changelog-report code { font-family: monospace; font-size: 12.5px; background-color: var(--color-group-members); border-radius: 3px; padding: 1px 4px; }
+        .changelog-report pre { background-color: var(--color-group-members); border-radius: 4px; padding: 8px 10px; overflow-x: auto; margin: 6px 0; }
+        .changelog-report pre code { padding: 0; background: none; }
+        .changelog-report blockquote { border-left: 3px solid var(--color-group-border); padding-left: 10px; color: var(--color-text-dim); margin: 6px 0; }
+        .changelog-report table { display: block; overflow-x: auto; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .changelog-report th, .changelog-report td { border: 1px solid var(--color-group-border); padding: 3px 8px; }
+        .changelog-report th { background-color: var(--color-group-members); font-weight: 600; }
+        .changelog-report details { border: 1px solid var(--color-group-border); border-radius: 4px; padding: 4px 10px; margin: 8px 0; }
+        .changelog-report summary { cursor: pointer; font-weight: 600; }
+        .changelog-report hr { border: none; border-top: 1px solid var(--color-group-border); margin: 12px 0; }
         @media (max-width: 1100px) { .api-sidebar { width: 200px !important; } }
         @media (max-width: 768px) { .api-sidebar { width: 100% !important; max-height: 40vh; border-bottom: 1px solid var(--color-group-border); } .api-page-content { flex-direction: column; } }
       `}</style>
