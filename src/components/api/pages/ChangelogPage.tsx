@@ -92,25 +92,48 @@ async function loadChangelogVersion(version: string): Promise<ChangelogEntry | n
   }
 }
 
-// Update reports written by dota-data's automation (`reports/<version>.md`): a model's
-// analysis of the API and game-code changes. Only recent versions have one.
+// Update reports written by dota-data's automation: a model's analysis of the API and
+// game-code changes, `reports/<version>.md` in Russian and its translation
+// `reports/<version>.en.md`. Only recent versions have one.
 const REPORT_BASE = isDev
   ? "/report-data"
   : "https://raw.githubusercontent.com/iwasinminedream/dota-data/master/reports";
 const REPORT_REPO_URL = "https://github.com/iwasinminedream/dota-data/blob/master/reports/";
 
+type ReportLanguage = "en" | "ru";
+
+const REPORT_LANGUAGES: { id: ReportLanguage; label: string; title: string }[] = [
+  { id: "en", label: "EN", title: "English (translated from the Russian original)" },
+  { id: "ru", label: "RU", title: "Русский (оригинал)" },
+];
+
+function reportFile(version: string, language: ReportLanguage): string {
+  return `${version}${language === "en" ? ".en" : ""}.md`;
+}
+
 const reportCache = new Map<string, string | null>();
 
-async function loadReport(version: string): Promise<string | null> {
-  if (reportCache.has(version)) return reportCache.get(version)!;
+async function loadReport(version: string, language: ReportLanguage): Promise<string | null> {
+  const file = reportFile(version, language);
+  if (reportCache.has(file)) return reportCache.get(file)!;
   try {
-    const response = await fetch(`${REPORT_BASE}/${version}.md`);
+    const response = await fetch(`${REPORT_BASE}/${file}`);
     const text = response.ok ? await response.text() : null;
-    reportCache.set(version, text);
+    reportCache.set(file, text);
     return text;
   } catch {
     return null;
   }
+}
+
+// The reader's choice, else the browser's language.
+const REPORT_LANGUAGE_KEY = "reportLanguage";
+
+function getReportLanguage(): ReportLanguage {
+  if (typeof window === "undefined") return "en";
+  const saved = localStorage.getItem(REPORT_LANGUAGE_KEY);
+  if (saved === "en" || saved === "ru") return saved;
+  return navigator.language.toLowerCase().startsWith("ru") ? "ru" : "en";
 }
 
 // ─── Section type definitions ───────────────────────────────────────────────────
@@ -854,25 +877,41 @@ function renderReport(markdown: string): string {
 }
 
 function ReportBlock({ version }: { version: string }) {
-  const [report, setReport] = useState<string | null>(null);
+  const [reports, setReports] = useState<Partial<Record<ReportLanguage, string>> | null>(null);
+  // The block renders nothing until the reports are loaded, so reading the saved
+  // language on the first render cannot differ from the server HTML.
+  const [language, setLanguage] = useState<ReportLanguage>(getReportLanguage);
   // Collapsed by default, and again after a version switch (the block remounts
   // while the next version loads).
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setReport(null);
-    loadReport(version).then((text) => {
-      if (!cancelled) setReport(text);
+    setReports(null);
+    Promise.all(REPORT_LANGUAGES.map(({ id }) => loadReport(version, id))).then((texts) => {
+      if (cancelled) return;
+      const loaded: Partial<Record<ReportLanguage, string>> = {};
+      REPORT_LANGUAGES.forEach(({ id }, i) => {
+        if (texts[i]) loaded[id] = texts[i]!;
+      });
+      setReports(loaded);
     });
     return () => {
       cancelled = true;
     };
   }, [version]);
 
+  // The chosen language, or the other one when this version has no report in it.
+  const shown = reports?.[language] ? language : REPORT_LANGUAGES.find(({ id }) => reports?.[id])?.id;
+  const report = shown ? reports?.[shown] : undefined;
   const html = useMemo(() => (report && open ? renderReport(report) : ""), [report, open]);
 
-  if (!report) return null;
+  if (!report || !shown) return null;
+
+  const chooseLanguage = (id: ReportLanguage) => {
+    setLanguage(id);
+    localStorage.setItem(REPORT_LANGUAGE_KEY, id);
+  };
 
   return (
     // flexShrink 0: this sits directly in the scrolling flex column, where overflow:hidden
@@ -899,15 +938,43 @@ function ReportBlock({ version }: { version: string }) {
           <span style={{ fontSize: 18, fontWeight: 700, color: "var(--color-text)" }}>AI analysis</span>
           <span style={{ fontSize: 12, color: "var(--color-text-faded, #999)" }}>
             What changed in the API and in the game code, written by a neural network from the dump and the
-            game binaries. May contain mistakes. In Russian.
+            game binaries. May contain mistakes.{shown === "en" && " Translated from the Russian original."}
           </span>
         </span>
+        <span
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            display: "inline-flex", marginLeft: "auto", flexShrink: 0, borderRadius: 4, overflow: "hidden",
+            border: `1px solid color-mix(in srgb, ${REPORT_COLOR} 40%, transparent)`,
+          }}
+        >
+          {REPORT_LANGUAGES.map(({ id, label, title }) => {
+            const available = !!reports?.[id];
+            const active = id === shown;
+            return (
+              <button
+                key={id}
+                disabled={!available}
+                title={available ? title : "No report in this language for this version"}
+                onClick={() => chooseLanguage(id)}
+                style={{
+                  border: "none", padding: "3px 9px", fontSize: 12, fontWeight: 700,
+                  cursor: available ? "pointer" : "default", opacity: available ? 1 : 0.4,
+                  color: active ? "white" : "var(--color-text-faded, #999)",
+                  backgroundColor: active ? REPORT_COLOR : "transparent",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </span>
         <a
-          href={`${REPORT_REPO_URL}${version}.md`}
+          href={`${REPORT_REPO_URL}${reportFile(version, shown)}`}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          style={{ fontSize: 13, color: "var(--color-text-faded, #999)", marginLeft: "auto", whiteSpace: "nowrap" }}
+          style={{ fontSize: 13, color: "var(--color-text-faded, #999)", whiteSpace: "nowrap" }}
         >
           GitHub
         </a>
