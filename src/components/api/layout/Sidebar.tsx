@@ -11,14 +11,11 @@ export type HoistType = {
   scope: string;
 };
 
-function getBase(): string {
-  if (typeof document === "undefined") return "/moddota.github.io/";
-  return document.querySelector("base")?.getAttribute("href") || "/";
-}
-
 export function DeclarationsSidebar({ hoist }: { hoist: HoistType[] }) {
   const { root, declarations } = useContext(DeclarationsContext);
-  const base = typeof window !== "undefined" ? getBase() : "/";
+  // Same value during SSR and on the client: React keeps the server-rendered href on
+  // hydration, so a base-less SSR value would leave dead links (open in new tab, copy link).
+  const base = import.meta.env.BASE_URL;
   const hoistedKinds = hoist.map((h) => h.scope);
 
   const filteredDeclarations = declarations.filter(

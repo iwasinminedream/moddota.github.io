@@ -1,30 +1,54 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect } from "react";
 import { notifySearchChange } from "./Search";
 
+function getBase(): string {
+  return document.querySelector("base")?.getAttribute("href") || "";
+}
+
+// The element a `#hash` names. getElementById, not querySelector: declaration names such
+// as `$` are not valid CSS selectors.
+function getHashTarget(): HTMLElement | null {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return null;
+  let id = hash;
+  try {
+    id = decodeURIComponent(hash);
+  } catch {
+    // Malformed escape: look the raw value up.
+  }
+  return document.getElementById(id);
+}
+
+/** Scrolls to the element the URL's `#hash` names, if it is on the page. */
+export function scrollToHash() {
+  getHashTarget()?.scrollIntoView();
+}
+
+// The scroll on page load is done by ContentList once the list has rendered
+// (it renders only after mount, so the element is not there yet when this mounts).
 export function HashScrollHandler() {
-  const didScroll = useRef(false);
-
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash !== "#") {
-      const el = document.querySelector(hash);
-      if (el) el.scrollIntoView();
-    }
-    didScroll.current = true;
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      const hash = window.location.hash;
-      if (hash && hash !== "#") {
-        document.querySelector(hash)?.scrollIntoView();
-      }
-    };
-    window.addEventListener("hashchange", handler);
-    return () => window.removeEventListener("hashchange", handler);
+    window.addEventListener("hashchange", scrollToHash);
+    return () => window.removeEventListener("hashchange", scrollToHash);
   }, []);
 
   return null;
+}
+
+/** Follows a link to `api<root>/…`. On the page that shows `root` it only updates the URL
+ *  (the list re-renders from it); anywhere else — e.g. a card on the all-search page —
+ *  the URL would change while the page stays the same, so it loads the target page. */
+export function followApiLink(e: React.MouseEvent, root: string, href: string) {
+  if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  const prefix = `${getBase()}api${root}`;
+  const path = window.location.pathname;
+  if (path === prefix || path.startsWith(`${prefix}/`)) {
+    window.history.pushState({}, "", href);
+    notifySearchChange();
+  } else {
+    window.location.assign(href);
+  }
 }
 
 export function useLinkedElement(root: string, { scope, hash }: { scope?: string; hash?: string }) {
@@ -36,18 +60,11 @@ export function useLinkedElement(root: string, { scope, hash }: { scope?: string
 }
 
 export function ElementLink({ root, scope, hash }: { root: string; scope: string; hash?: string }) {
-  const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
+  const base = typeof window !== "undefined" ? getBase() : "";
   const urlHash = hash ? `#${hash}` : "";
   const href = `${base}api${root}/${scope}${urlHash}`;
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      window.history.pushState({}, "", href);
-      notifySearchChange();
-    },
-    [href],
-  );
+  const handleClick = useCallback((e: React.MouseEvent) => followApiLink(e, root, href), [root, href]);
 
   return (
     <a

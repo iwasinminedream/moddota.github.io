@@ -3,7 +3,7 @@ import { doSearch } from "./utils/filtering";
 import { DeclarationsContext } from "./DeclarationsContext";
 
 export const ReferencesLink: React.FC<{ name: string }> = ({ name }) => {
-  const { declarations } = useContext(DeclarationsContext);
+  const { root, declarations } = useContext(DeclarationsContext);
   const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
   const search = `?search=${encodeURIComponent(`type:${name}`)}`;
   const referencesCount = useMemo(() => {
@@ -16,7 +16,8 @@ export const ReferencesLink: React.FC<{ name: string }> = ({ name }) => {
 
   return (
     <a
-      href={`${base}api/vscripts${search}`}
+      // The count is over this page's declarations, so the search must run on this page too.
+      href={`${base}api${root}${search}`}
       title="Find all usages of this API"
       style={{ marginRight: 4, color: "var(--color-text)", fontSize: 14 }}
     >

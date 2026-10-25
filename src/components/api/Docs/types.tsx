@@ -4,7 +4,7 @@ import { ColoredSyntax, getSyntaxColorFor } from "../ColoredSyntax";
 import type { ColoredSyntaxKind } from "../ColoredSyntax";
 import { assertNever, intersperse } from "../../../utils/types";
 import { DeclarationsContext } from "./DeclarationsContext";
-import { notifySearchChange } from "../Search";
+import { followApiLink } from "../ElementLink";
 
 export const Types: React.FC<{ types: api.Type[] }> = ({ types }) => (
   <>
@@ -58,14 +58,7 @@ const ReferenceType: React.FC<{ name: string }> = ({ name }) => {
   const base = typeof window !== "undefined" ? document.querySelector("base")?.getAttribute("href") || "" : "";
   const href = `${base}api${root}/${scope}${urlHash}`;
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      window.history.pushState({}, "", href);
-      notifySearchChange();
-    },
-    [href],
-  );
+  const handleClick = useCallback((e: React.MouseEvent) => followApiLink(e, root, href), [root, href]);
 
   return scope ? (
     <a href={href} onClick={handleClick} style={{ fontWeight: 600, ...style }}>

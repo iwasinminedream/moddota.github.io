@@ -4,15 +4,18 @@ import mdx from '@astrojs/mdx';
 import tailwindcss from '@tailwindcss/vite';
 import remarkRemove from './src/plugins/remark-remove.mjs';
 import remarkComponents from './src/plugins/remark-components.mjs';
+import remarkBaseLinks from './src/plugins/remark-base-links.mjs';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const base = '/moddota.github.io/';
+const articleLinks = [remarkBaseLinks, { base, articlesDir: path.resolve(__dirname, 'src/content/articles') }];
 
 export default defineConfig({
   site: 'https://iwasinminedream.github.io',
-  base: '/moddota.github.io/',
+  base,
   output: 'static',
   // Prefetch internal links on hover so client-side tab navigation feels instant.
   // `hover` uses document-level event delegation, so it also covers the nav links
@@ -22,12 +25,12 @@ export default defineConfig({
     defaultStrategy: 'hover',
   },
   markdown: {
-    remarkPlugins: [remarkRemove, remarkComponents],
+    remarkPlugins: [remarkRemove, [remarkComponents, { base }], articleLinks],
   },
   integrations: [
     react(),
     mdx({
-      remarkPlugins: [remarkRemove, remarkComponents],
+      remarkPlugins: [remarkRemove, [remarkComponents, { base }], articleLinks],
     }),
   ],
   vite: {
@@ -41,6 +44,21 @@ export default defineConfig({
             const filePath = path.join(dotaDataFiles, req.url || '');
             if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
               res.setHeader('Content-Type', 'application/json');
+              fs.createReadStream(filePath).pipe(res);
+            } else {
+              next();
+            }
+          });
+        },
+      },
+      {
+        name: 'serve-report-data',
+        configureServer(server) {
+          const reportFiles = path.resolve(__dirname, '../dota-data/reports');
+          server.middlewares.use('/report-data', (req, res, next) => {
+            const filePath = path.join(reportFiles, req.url || '');
+            if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+              res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
               fs.createReadStream(filePath).pipe(res);
             } else {
               next();

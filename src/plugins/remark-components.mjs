@@ -4,7 +4,7 @@ import { visit } from 'unist-util-visit';
  * Remark plugin that converts custom JSX-like tags in markdown HTML
  * into actual HTML embeds. Handles: YouTube, Gfycat, StaticVideo.
  */
-export default function remarkComponents() {
+export default function remarkComponents({ base = '/' } = {}) {
   return function transform(tree) {
     visit(tree, 'html', (node) => {
       // <YouTube id="xxx" /> or <YouTube playlistId="xxx" />
@@ -24,12 +24,14 @@ export default function remarkComponents() {
         (_, id) => `<div style="position:relative;padding-bottom:56.25%"><iframe src="https://gfycat.com/ifr/${id}" frameborder="0" scrolling="no" allowfullscreen width="100%" height="100%" style="position:absolute;top:0;left:0"></iframe></div>`
       );
 
-      // <StaticVideo path="xxx" /> or <StaticVideo path="xxx" controls />
+      // <StaticVideo path="xxx" />, <StaticVideo path="xxx" controls /> or controls="true".
+      // The path is relative to the site root (`videos/x.mp4` is public/videos/x.mp4).
       node.value = node.value.replace(
-        /<StaticVideo\s+path="([^"]+)"(?:\s+controls)?\s*\/?>/g,
-        (match, path) => {
-          const controls = match.includes('controls') ? ' controls' : '';
-          return `<video width="100%" height="100%" autoplay muted loop${controls}><source src="${path}" type="video/mp4"></video>`;
+        /<StaticVideo\s+path="([^"]+)"([^>]*?)\/?>/g,
+        (match, path, attributes) => {
+          const controls = /\bcontrols\b(?!="false")/.test(attributes) ? ' controls' : '';
+          const src = /^([a-z]+:)?\/\//i.test(path) ? path : `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+          return `<video width="100%" height="100%" autoplay muted loop${controls}><source src="${src}" type="video/mp4"></video>`;
         }
       );
     });

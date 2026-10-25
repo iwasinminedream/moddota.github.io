@@ -1,4 +1,26 @@
 ---
-// Redirect /api/ to /api/vscripts
-return Astro.redirect(`${import.meta.env.BASE_URL}api/vscripts`);
+// Redirect /api/ to /api/vscripts. The old API browser used hash routes
+// (`/api/#!/vscripts/CBaseEntity`, `/api/#!/vscripts?search=GetIntellect`); those
+// are still linked from articles and elsewhere, so they go to the same route
+// here. A plain HTTP / meta redirect would drop the hash.
+const base = import.meta.env.BASE_URL;
+const target = `${base}api/vscripts`;
 ---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redirecting to: {target}</title>
+    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={new URL(target, Astro.site).href} />
+    <script is:inline define:vars={{ base, target }}>
+      var legacy = window.location.hash.match(/^#!\/(.+)$/);
+      window.location.replace(legacy ? base + 'api/' + legacy[1] : target + window.location.search);
+    </script>
+    <noscript><meta http-equiv="refresh" content={`0;url=${target}`} /></noscript>
+  </head>
+  <body>
+    <a href={target}>Redirecting from <code>{base}api/</code> to <code>{target}</code></a>
+  </body>
+</html>

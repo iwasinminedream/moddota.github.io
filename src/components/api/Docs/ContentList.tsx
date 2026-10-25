@@ -9,6 +9,7 @@ import { CssProperty } from "./CssProperty";
 import type { Declaration } from "./api";
 import { DeclarationsContext } from "./DeclarationsContext";
 import { AvailabilityFiltersContext, SearchBox, getSearchFromUrl, subscribeToSearchChange } from "../Search";
+import { scrollToHash } from "../ElementLink";
 
 function getBase(): string {
   if (typeof document === "undefined") return "/moddota.github.io/";
@@ -94,6 +95,14 @@ export function ContentList() {
   }, [serverEnabled, clientEnabled]);
 
   const effectiveScope = search ? "" : scope;
+
+  // A link like `…/CDOTA_BaseNPC#AddNewModifier`: the list exists only from the
+  // mounted render on, so scroll to the element once it has been committed — on
+  // load and after in-page links to another scope (type links to `constants#X`).
+  useEffect(() => {
+    if (mounted) scrollToHash();
+  }, [mounted, effectiveScope]);
+
   const { data, isSearching } = getFilteredData(declarations, search, effectiveScope, { serverEnabled, clientEnabled });
 
   // Show placeholder during SSR, or when nothing is selected/searched

@@ -13,6 +13,12 @@
 import '../styles/global.css';
 
 const base = import.meta.env.BASE_URL;
+
+// Sections are the built pages under `src/pages/api/` (`vscripts`, `panorama/panels`, …),
+// so a new API page gets the fallback without touching this file.
+const knownSections = Object.keys(import.meta.glob('./api/**/*.astro'))
+  .map((file) => file.replace(/^\.\/api\//, '').replace(/\.astro$/, '').replace(/(^|\/)index$/, ''))
+  .filter((section) => section && !section.includes('['));
 ---
 
 <!doctype html>
@@ -23,7 +29,7 @@ const base = import.meta.env.BASE_URL;
     <title>Not Found - ModDota</title>
     <base href={base} />
     <link rel="icon" href={`${base}images/favicon.ico`} />
-    <script is:inline define:vars={{ base }}>
+    <script is:inline define:vars={{ base, knownSections }}>
       (function () {
         var l = window.location;
         var pathname = l.pathname;
@@ -34,29 +40,16 @@ const base = import.meta.env.BASE_URL;
         var segments = rel.split('/');
         if (segments.length < 3 || segments[0] !== 'api') return;
 
-        // Sections may be one segment (`vscripts`) or two (`panorama/api`).
-        // Try the two-segment form first, then fall back to one segment.
-        var knownSections = [
-          'vscripts',
-          'events',
-          'convars',
-          'modifiers',
-          'abilities',
-          'changelog',
-          'panorama/api',
-          'panorama/css',
-          'panorama/events',
-        ];
-
+        // Sections may be one segment (`vscripts`) or more (`panorama/api`): take the
+        // longest known one that still leaves a sub-path.
         var section = null;
         var restStart = 0;
-        var twoSeg = segments.length >= 4 ? segments[1] + '/' + segments[2] : null;
-        if (twoSeg && knownSections.indexOf(twoSeg) !== -1) {
-          section = twoSeg;
-          restStart = 3;
-        } else if (knownSections.indexOf(segments[1]) !== -1) {
-          section = segments[1];
-          restStart = 2;
+        for (var end = segments.length - 1; end >= 2 && !section; end--) {
+          var candidate = segments.slice(1, end).join('/');
+          if (knownSections.indexOf(candidate) !== -1) {
+            section = candidate;
+            restStart = end;
+          }
         }
         if (!section) return;
 
