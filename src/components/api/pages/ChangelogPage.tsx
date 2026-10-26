@@ -162,6 +162,7 @@ const categoryOrder = [
   "Console Variables",
   "Modifiers",
   "Native Modifier Functions",
+  "Native Modifier Functions (client.dll)",
   "Properties Fixed",
   "Lua Types",
   "Localization",
@@ -184,9 +185,40 @@ const diffFieldLabels: Record<string, string> = {
 
 const typeKinds = new Set(["object", "nominal", "primitive"]);
 
-// A function or CheckState state of a native modifier (`modifier_function`, `modifier_state`):
+// A function or CheckState state of a native modifier (`modifier_function`, `modifier_state`;
+// `modifier_function_client` is client.dll's result where it differs from server.dll's):
 // `modifier_x.MODIFIER_PROPERTY_Y` -> ["modifier_x", "MODIFIER_PROPERTY_Y"].
-const nativeModifierTypes = new Set(["modifier_function", "modifier_state"]);
+const nativeModifierTypes = new Set(["modifier_function", "modifier_function_client", "modifier_state"]);
+
+// client.dll's results come in the same category as server.dll's; they are shown on their own.
+const CLIENT_FUNCTIONS_SUFFIX = " (client.dll)";
+
+const categoryTitles: Record<string, string> = {
+  [`Native Modifier Functions${CLIENT_FUNCTIONS_SUFFIX}`]:
+    "client.dll's own copy of the modifier, where its result differs from server.dll's or only the client has the function: what the client predicts and shows in tooltips",
+};
+
+function isClientFunction(item: { type?: string }): boolean {
+  return item.type === "modifier_function_client";
+}
+
+function partition<T>(items: T[] = [], test: (item: T) => boolean): [T[], T[]] {
+  return [items.filter((item) => !test(item)), items.filter(test)];
+}
+
+function splitClientFunctions(changes: Record<string, CategoryChanges>): Record<string, CategoryChanges> {
+  const out: Record<string, CategoryChanges> = {};
+  for (const [catName, cat] of Object.entries(changes)) {
+    const [added, clientAdded] = partition(cat.added, isClientFunction);
+    const [removed, clientRemoved] = partition(cat.removed, isClientFunction);
+    const [changed, clientChanged] = partition(cat.changed, isClientFunction);
+    out[catName] = { added, removed, changed };
+    if (clientAdded.length + clientRemoved.length + clientChanged.length > 0) {
+      out[`${catName}${CLIENT_FUNCTIONS_SUFFIX}`] = { added: clientAdded, removed: clientRemoved, changed: clientChanged };
+    }
+  }
+  return out;
+}
 
 function splitModifierFunction(name = ""): [string, string] {
   const dot = name.lastIndexOf(".");
@@ -269,7 +301,7 @@ function aggregateBySection(changes: Record<string, CategoryChanges>) {
     removed: [],
   };
 
-  const catEntries = Object.entries(changes).sort(
+  const catEntries = Object.entries(splitClientFunctions(changes)).sort(
     (a, b) => getCategorySort(a[0]) - getCategorySort(b[0]),
   );
 
@@ -342,7 +374,7 @@ function renderAddedRemovedItem(item: ChangeItem): React.ReactNode {
     // A function's value is its formula, or the status when there is none ("event", "unresolved");
     // a state's is `true`, `false` or `true when <condition>`.
     const formula =
-      item.type !== "modifier_function" ? item.value : item.value === "event" ? undefined : item.value === "unresolved" ? "(unresolved)" : item.value;
+      item.type === "modifier_state" ? item.value : item.value === "event" ? undefined : item.value === "unresolved" ? "(unresolved)" : item.value;
     return (
       <>
         <span style={{ color: "var(--color-highlight)", fontWeight: 500 }}>{splitModifierFunction(item.name)[1]}</span>
@@ -644,7 +676,7 @@ function CategorySubBlock({
           transition: "transform 0.2s", display: "inline-block",
           transform: isCatCollapsed ? "rotate(-90deg)" : "rotate(0deg)",
         }}>&#9660;</span>
-        <span style={{ flex: 1 }}>{categoryName}</span>
+        <span style={{ flex: 1 }} title={categoryTitles[categoryName]}>{categoryName}</span>
         <span style={{ fontSize: 11, fontWeight: "normal", color: "var(--color-text-faded, #999)" }}>
           {items.length} items
         </span>
@@ -1025,8 +1057,9 @@ function VersionContent({ entry }: { entry: ChangelogEntry }) {
     for (const sectionType of ["changed", "added", "removed"] as SectionType[]) {
       const cats = sections[sectionType];
       for (const { category, items } of cats) {
-        // Localization diffs can be huge, so keep that category collapsed by default.
-        if (category === "Localization") {
+        // Localization diffs can be huge, so keep that category collapsed by default; client.dll's
+        // results are secondary to server.dll's.
+        if (category === "Localization" || category.endsWith(CLIENT_FUNCTIONS_SUFFIX)) {
           autoCollapse.add(`${sectionType}-cat-${category}`);
         }
         for (const item of items) {

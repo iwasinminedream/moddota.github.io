@@ -39,9 +39,8 @@ const DATA_BASE = isDev
 
 type FunctionStatus = "constant" | "formula" | "partial" | "unresolved" | "event";
 
-interface NativeFunction {
-  function: string;
-  handler?: string;
+// What one DLL's handler returns.
+interface FunctionResult {
   status: FunctionStatus;
   formula?: string;
   specials?: string[];
@@ -49,8 +48,21 @@ interface NativeFunction {
   reason?: string[];
 }
 
+// The DLL a function or a modifier exists in when only one of them has it.
+type Side = "server" | "client";
+
+interface NativeFunction extends FunctionResult {
+  function: string;
+  handler?: string;
+  // client.dll's result where it differs from server.dll's (the fields above).
+  client?: FunctionResult;
+  // Declared by that DLL only; the fields above are its result.
+  side?: Side;
+}
+
 interface NativeModifier {
   class: string;
+  side?: Side;
   bases?: string[];
   ability?: string;
   abilities?: string[];
@@ -109,6 +121,20 @@ function lazyData<T>(path: string) {
 }
 
 const useNativeModifiers = lazyData<NativeModifiers>("vscripts/native_modifiers.json");
+
+// Whether the file has client.dll's results too (older ones are server.dll's only).
+const withClientCache = new WeakMap<NativeModifiers, boolean>();
+
+function hasClientResults(native: NativeModifiers): boolean {
+  let value = withClientCache.get(native);
+  if (value === undefined) {
+    value = Object.values(native.modifiers ?? {}).some(
+      (entry) => entry.side !== undefined || (entry.functions ?? []).some((fn) => fn.client !== undefined || fn.side !== undefined),
+    );
+    withClientCache.set(native, value);
+  }
+  return value;
+}
 // For the special values (`%name%`) the formulas read; loaded once a card is opened.
 const useAbilities = lazyData<Record<string, KVValue>>("abilities.json");
 
@@ -283,21 +309,60 @@ function abilityUrl(base: string, ability: string): string {
   return `${base}api/abilities?search=${encodeURIComponent(ability)}`;
 }
 
-function PropertyFunction({ fn, ctx, values }: { fn: NativeFunction; ctx: FormulaContext; values?: (name: string) => SpecialValue | undefined }) {
-  const status = statusInfo[fn.status as Exclude<FunctionStatus, "event">] ?? statusInfo.unresolved;
-  const specials = values ? (fn.specials ?? []).map((name) => [name, values(name)] as const) : [];
+function getStatusInfo(status: FunctionStatus) {
+  return statusInfo[status as Exclude<FunctionStatus, "event">] ?? statusInfo.unresolved;
+}
+
+const badgeStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, textTransform: "uppercase", cursor: "help" };
+
+function StatusBadge({ status }: { status: FunctionStatus }) {
+  const info = getStatusInfo(status);
+  return <span title={info.title} style={{ ...badgeStyle, color: info.color }}>{status}</span>;
+}
+
+const sideInfo: Record<Side, { label: string; title: string }> = {
+  server: { label: "server.dll only", title: "client.dll does not have it" },
+  client: { label: "client.dll only", title: "server.dll does not have it: this is client.dll's result" },
+};
+
+function SideBadge({ side }: { side: Side }) {
+  return <span title={sideInfo[side].title} style={{ ...badgeStyle, color: "var(--color-text-faded)" }}>{sideInfo[side].label}</span>;
+}
+
+const clientResultTitle =
+  "client.dll's own copy of this handler returns something else: what the client predicts and shows in tooltips. " +
+  "Often it is only the analysis reaching further in one DLL (a ? on one side) or the same test written differently.";
+
+/** client.dll's result where it differs from server.dll's: one line until opened. */
+function ClientResult({ result, ctx, values }: { result: FunctionResult; ctx: FormulaContext; values?: (name: string) => SpecialValue | undefined }) {
+  const [open, setOpen] = useState(false);
+  // The fields listed for the modifier are server.dll's; client.dll's have other offsets.
+  const clientCtx = useMemo<FormulaContext>(() => ({ ...ctx, field: () => "A field of client.dll's copy of the modifier" }), [ctx]);
   return (
-    <div style={{ borderLeft: `3px solid ${status.color}`, paddingLeft: 8 }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "0 10px", fontFamily: "monospace", fontSize: 12 }}>
-        <a href={luaSearchUrl(ctx.base, fn.function)} style={{ ...linkStyle, fontWeight: 600 }}>{fn.function}</a>
-        {fn.handler && (
-          <a href={handlerUrl(ctx.base, fn.handler)} data-astro-reload style={{ ...linkStyle, color: "var(--color-text-dim)" }}>{fn.handler}</a>
+    <div style={{ marginTop: 3 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        title={clientResultTitle}
+        style={{ display: "flex", alignItems: "baseline", gap: 8, width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "monospace", fontSize: 12, color: "var(--color-text-faded)", textAlign: "left" }}
+      >
+        <span style={{ flexShrink: 0 }}>{open ? "▼" : "▶"} client.dll</span>
+        <StatusBadge status={result.status} />
+        {!open && result.formula !== undefined && (
+          <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{result.formula}</span>
         )}
-        <span title={status.title} style={{ fontSize: 10, fontWeight: 600, color: status.color, textTransform: "uppercase", cursor: "help" }}>{fn.status}</span>
-      </div>
-      {fn.formula !== undefined && <Formula text={fn.formula} ctx={ctx} />}
-      {fn.status === "unresolved" && fn.reason && fn.reason.length > 0 && (
-        <div style={{ fontSize: 12, color: "#ef4444", marginTop: 2 }}>{fn.reason.join("; ")}</div>
+      </button>
+      {open && <FunctionResultDetails result={result} ctx={clientCtx} values={values} />}
+    </div>
+  );
+}
+
+function FunctionResultDetails({ result, ctx, values }: { result: FunctionResult; ctx: FormulaContext; values?: (name: string) => SpecialValue | undefined }) {
+  const specials = values ? (result.specials ?? []).map((name) => [name, values(name)] as const) : [];
+  return (
+    <>
+      {result.formula !== undefined && <Formula text={result.formula} ctx={ctx} />}
+      {result.status === "unresolved" && result.reason && result.reason.length > 0 && (
+        <div style={{ fontSize: 12, color: "#ef4444", marginTop: 2 }}>{result.reason.join("; ")}</div>
       )}
       {specials.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0 16px", marginTop: 2, fontFamily: "monospace", fontSize: 12 }}>
@@ -311,6 +376,23 @@ function PropertyFunction({ fn, ctx, values }: { fn: NativeFunction; ctx: Formul
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+function PropertyFunction({ fn, ctx, values }: { fn: NativeFunction; ctx: FormulaContext; values?: (name: string) => SpecialValue | undefined }) {
+  return (
+    <div style={{ borderLeft: `3px solid ${getStatusInfo(fn.status).color}`, paddingLeft: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "0 10px", fontFamily: "monospace", fontSize: 12 }}>
+        <a href={luaSearchUrl(ctx.base, fn.function)} style={{ ...linkStyle, fontWeight: 600 }}>{fn.function}</a>
+        {fn.handler && (
+          <a href={handlerUrl(ctx.base, fn.handler)} data-astro-reload style={{ ...linkStyle, color: "var(--color-text-dim)" }}>{fn.handler}</a>
+        )}
+        <StatusBadge status={fn.status} />
+        {fn.side && <SideBadge side={fn.side} />}
+      </div>
+      <FunctionResultDetails result={fn} ctx={ctx} values={values} />
+      {fn.client && <ClientResult result={fn.client} ctx={ctx} values={values} />}
     </div>
   );
 }
@@ -358,7 +440,7 @@ function ModifierStates({ states, unresolved, ctx }: { states: ModifierState[]; 
   );
 }
 
-function NativeModifierDetails({ entry, version, base }: { entry: NativeModifier; version: string; base: string }) {
+function NativeModifierDetails({ entry, version, withClient, base }: { entry: NativeModifier; version: string; withClient: boolean; base: string }) {
   const abilities = useAbilities(true);
   const [showFields, setShowFields] = useState(false);
   const functions = entry.functions ?? [];
@@ -422,13 +504,16 @@ function NativeModifierDetails({ entry, version, base }: { entry: NativeModifier
       {events.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 10px", fontFamily: "monospace", fontSize: 12 }}>
           <span style={sectionLabelStyle}>Events</span>
-          {events.map((fn) =>
-            fn.handler ? (
-              <a key={fn.function} href={handlerUrl(base, fn.handler)} data-astro-reload title={fn.function} style={linkStyle}>{fn.handler}</a>
-            ) : (
-              <a key={fn.function} href={luaSearchUrl(base, fn.function)} style={linkStyle}>{fn.function}</a>
-            ),
-          )}
+          {events.map((fn) => (
+            <span key={fn.function}>
+              {fn.handler ? (
+                <a href={handlerUrl(base, fn.handler)} data-astro-reload title={fn.function} style={linkStyle}>{fn.handler}</a>
+              ) : (
+                <a href={luaSearchUrl(base, fn.function)} style={linkStyle}>{fn.function}</a>
+              )}
+              {fn.side && <> <SideBadge side={fn.side} /></>}
+            </span>
+          ))}
         </div>
       )}
 
@@ -466,7 +551,14 @@ function NativeModifierDetails({ entry, version, base }: { entry: NativeModifier
       )}
 
       <div style={{ fontSize: 11, color: "var(--color-text-faded)" }}>
-        Read from server.dll, build {version}. <span style={unknownStyle}>?</span> marks a part the analysis could not follow.
+        {!withClient
+          ? `Read from server.dll, build ${version}.`
+          : entry.side === "client"
+            ? `Read from client.dll, build ${version}: server.dll has no such modifier.`
+            : entry.side === "server"
+              ? `Read from server.dll, build ${version}: client.dll has no such modifier.`
+              : `Read from server.dll and client.dll, build ${version}: client.dll's result is shown where it differs.`}{" "}
+        <span style={unknownStyle}>?</span> marks a part the analysis could not follow.
       </div>
     </div>
   );
@@ -505,6 +597,7 @@ export function ModifierItem({ modifier }: { modifier: { name: string; category:
         <code style={{ fontSize: 14, fontWeight: 600, wordBreak: "break-word" }}>{modifier.name}</code>
         {entry && (
           <span style={{ marginLeft: "auto", display: "flex", gap: 10, flexShrink: 0, fontSize: 11, color: "var(--color-text-faded)" }}>
+            {entry.side && <span title={sideInfo[entry.side].title}>{sideInfo[entry.side].label}</span>}
             {partial && <span style={{ color: "#f59e0b" }} title={statusInfo.partial.title}>partial</span>}
             {propertyCount > 0 && <span>{propertyCount} {propertyCount === 1 ? "property" : "properties"}</span>}
             {stateCount > 0 && <span>{stateCount} {stateCount === 1 ? "state" : "states"}</span>}
@@ -515,10 +608,14 @@ export function ModifierItem({ modifier }: { modifier: { name: string; category:
       {open && native === undefined && <div style={{ marginTop: 6, fontSize: 12, color: "var(--color-text-faded)" }}>Loading…</div>}
       {open && native !== undefined && !entry && (
         <div style={{ marginTop: 6, fontSize: 12, color: "var(--color-text-faded)" }}>
-          {native ? "Not a native modifier of server.dll: no functions to show." : "The modifier data could not be loaded."}
+          {native
+            ? `Not a native modifier of ${hasClientResults(native) ? "server.dll or client.dll" : "server.dll"}: no functions to show.`
+            : "The modifier data could not be loaded."}
         </div>
       )}
-      {open && entry && native && <NativeModifierDetails entry={entry} version={native.version} base={base} />}
+      {open && entry && native && (
+        <NativeModifierDetails entry={entry} version={native.version} withClient={hasClientResults(native)} base={base} />
+      )}
     </div>
   );
 }
